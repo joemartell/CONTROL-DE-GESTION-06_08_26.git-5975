@@ -1,0 +1,118 @@
+import { Layout } from "../components/layout";
+import { FileText, FolderTree, Printer, Tags } from "lucide-react";
+
+const TAGS: [string, string][] = [
+  ["{consecutivo}", "Número consecutivo automático"],
+  ["{mes}", "Mes en texto (Enero…Diciembre)"],
+  ["{anio}", "Año"],
+  ["{fecha_recepcion_oficialia}", "Fecha de recepción oficialía"],
+  ["{hora_recepcion}", "Hora de recepción"],
+  ["{fecha_hora_recepcion_dcc}", "Fecha y hora de recepción DCC"],
+  ["{volante_oficialia}", "Volante de Oficialía/Correo"],
+  ["{numero_oficio_ente}", "Número de oficio ente"],
+  ["{signado_por}", "Signado por"],
+  ["{cargo_puesto}", "Cargo / Puesto"],
+  ["{asunto}", "Asunto"],
+  ["{ente}", "Ente"],
+  ["{organo_colegiado}", "Nombre de Órgano Colegiado"],
+  ["{fecha_hora_sesion}", "Fecha y hora de la sesión"],
+  ["{tipo_sesion}", "Tipo de sesión"],
+  ["{carpeta_trabajo}", "Carpeta de trabajo (Sí/No)"],
+  ["{sesion_virtual_presencial}", "Sesión virtual/presencial (Sí/No)"],
+  ["{sesion_virtual_detalle}", "Datos de sesión virtual/presencial"],
+  ["{consecutivo_folio}", "Consecutivo folio SCG/DCC/CE/----/2026"],
+  ["{persona_contralora}", "Persona contralora ciudadana convocada"],
+  ["{fecha_impresion}", "Fecha en que se imprime el documento"],
+];
+
+const RULES: [string, string][] = [
+  ["ASUNTO = «Convocatoria»", "Plantilla de Convocatoria"],
+  ["ASUNTO = «Extemporáneo»", "Plantilla de Extemporáneo"],
+  ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = Sí", "Plantilla específica 1"],
+  ["Carpeta de trabajo = Sí  ·  Sesión virtual/presencial = No", "Plantilla específica 2"],
+  ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = No", "Plantilla específica 3"],
+  ["Cualquier otro caso", "La app pregunta cuál plantilla usar"],
+];
+
+function Card({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-6 rounded-xl border border-border bg-card p-6">
+      <h2 className="mb-3 flex items-center gap-2 font-display text-xl font-semibold text-wine-900">
+        <Icon className="size-5 text-primary" /> {title}
+      </h2>
+      <div className="text-sm leading-relaxed text-ink">{children}</div>
+    </section>
+  );
+}
+
+export default function Ayuda() {
+  return (
+    <Layout>
+      <div className="mx-auto max-w-3xl px-8 py-8">
+        <h1 className="mb-6 font-display text-4xl font-bold text-wine-900">Ayuda</h1>
+
+        <Card icon={Printer} title="Cómo funciona la impresión">
+          <p className="mb-2">
+            Cada registro tiene el botón <b>Imprimir</b>. La app decide qué plantilla usar según estas reglas y descarga un nuevo <b>.docx</b> con los datos del registro:
+          </p>
+          <div className="overflow-hidden rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary text-left text-wine-900">
+                <tr><th className="px-3 py-2">Condición</th><th className="px-3 py-2">Plantilla</th></tr>
+              </thead>
+              <tbody>
+                {RULES.map(([c, p], i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="px-3 py-2">{c}</td>
+                    <td className="px-3 py-2 font-medium text-primary">{p}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card icon={FileText} title="Cómo preparar tu propia plantilla .docx">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Abre Microsoft Word (o LibreOffice) y crea tu documento con el formato oficial que necesites.</li>
+            <li>
+              Donde quieras que aparezca un dato, escribe la etiqueta correspondiente entre llaves, por ejemplo{" "}
+              <code className="rounded bg-secondary px-1">{"{asunto}"}</code> o{" "}
+              <code className="rounded bg-secondary px-1">{"{consecutivo_folio}"}</code>.
+            </li>
+            <li>Guarda el archivo en formato <b>.docx</b>.</li>
+            <li>Entra a la pestaña <b>Plantillas</b>, pulsa <b>Subir plantilla</b>, elige el archivo y asígnalo a la regla que corresponda.</li>
+            <li>Listo: al imprimir un registro, la app reemplaza cada etiqueta por su valor real.</li>
+          </ol>
+          <p className="mt-3 rounded-md bg-accent/10 p-3 text-[13px] text-wine-900">
+            Consejo: escribe la etiqueta de un solo tirón (sin autocorrección que parta las llaves) para que Word no la divida internamente.
+          </p>
+        </Card>
+
+        <Card icon={Tags} title="Etiquetas disponibles">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+            {TAGS.map(([tag, desc]) => (
+              <div key={tag} className="flex items-baseline gap-2">
+                <code className="rounded bg-secondary px-1.5 py-0.5 text-xs font-semibold text-primary">{tag}</code>
+                <span className="text-xs text-muted-foreground">{desc}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card icon={FolderTree} title="Dónde se guardan los datos (uso local)">
+          <p className="mb-2">Todo vive en tu equipo, dentro de la carpeta del proyecto:</p>
+          <pre className="overflow-x-auto rounded-lg bg-wine-900 p-4 text-xs leading-relaxed text-[#f3e6d8]">{`registros-scg/
+└─ datos/
+   ├─ base-de-datos/
+   │   └─ registros.db      ← base de datos (todos los registros)
+   ├─ plantillas/           ← tus archivos .docx cargados
+   └─ impresiones/          ← (opcional) documentos generados`}</pre>
+          <p className="mt-3">
+            Para respaldar tu información, copia la carpeta <b>datos/</b> completa. Para restaurar, reemplázala.
+          </p>
+        </Card>
+      </div>
+    </Layout>
+  );
+}
