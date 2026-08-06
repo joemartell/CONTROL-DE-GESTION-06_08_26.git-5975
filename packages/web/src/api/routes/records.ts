@@ -18,11 +18,13 @@ const recordFields = z.object({
   ente: z.string().nullable().optional(),
   organoColegiado: z.string().nullable().optional(),
   fechaHoraSesion: z.string().nullable().optional(),
+  numeroSesion: z.string().nullable().optional(),
   tipoSesion: z.string().nullable().optional(),
   carpetaTrabajo: z.string().nullable().optional(),
   sesionVirtualPresencial: z.string().nullable().optional(),
   sesionVirtualDetalle: z.string().nullable().optional(),
   consecutivoFolio: z.string().nullable().optional(),
+  firma: z.string().nullable().optional(),
   personaContralora: z.string().nullable().optional(),
 });
 

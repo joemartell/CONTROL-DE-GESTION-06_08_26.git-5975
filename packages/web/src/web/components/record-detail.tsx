@@ -58,13 +58,15 @@ export function RecordDetail({
         <Row label="Ente" value={record.ente} />
         <Row label="Órgano Colegiado" value={record.organoColegiado} />
         <Row label="Fecha y hora de sesión" value={fmtDateTime(record.fechaHoraSesion)} />
+        <Row label="Número de la sesión" value={record.numeroSesion} />
         <Row label="Tipo de sesión" value={record.tipoSesion} />
         <Row label="Carpeta de trabajo" value={record.carpetaTrabajo} />
         <Row label="Sesión virtual/presencial" value={record.sesionVirtualPresencial} />
         {record.sesionVirtualPresencial === "Sí" && (
-          <Row label="Datos sesión virtual/presencial" value={record.sesionVirtualDetalle} />
+          <Row label="Datos de la sesión" value={record.sesionVirtualDetalle} />
         )}
         <Row label="Consecutivo folio" value={record.consecutivoFolio} />
+        <Row label="Firma" value={record.firma} />
         <Row label="Persona contralora" value={record.personaContralora} />
       </dl>
     </Modal>

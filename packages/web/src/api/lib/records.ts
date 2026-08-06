@@ -74,10 +74,10 @@ export function buildTemplateData(r: Record<string, unknown>) {
     fechaHoraRecepcionDcc: string | null; volanteOficialia: string | null;
     numeroOficioEnte: string | null; signadoPor: string | null; cargoPuesto: string | null;
     asunto: string | null; ente: string | null; organoColegiado: string | null;
-    fechaHoraSesion: string | null; tipoSesion: string | null;
+    fechaHoraSesion: string | null; numeroSesion: string | null; tipoSesion: string | null;
     carpetaTrabajo: string | null; sesionVirtualPresencial: string | null;
     sesionVirtualDetalle: string | null; consecutivoFolio: string | null;
-    personaContralora: string | null;
+    firma: string | null; personaContralora: string | null;
   };
   return {
     consecutivo: String(rec.consecutivo ?? ""),
@@ -94,11 +94,16 @@ export function buildTemplateData(r: Record<string, unknown>) {
     ente: rec.ente ?? "",
     organo_colegiado: rec.organoColegiado ?? "",
     fecha_hora_sesion: fmtDateTime(rec.fechaHoraSesion),
+    numero_sesion: rec.numeroSesion ?? "",
     tipo_sesion: rec.tipoSesion ?? "",
     carpeta_trabajo: rec.carpetaTrabajo ?? "",
     sesion_virtual_presencial: rec.sesionVirtualPresencial ?? "",
+    // Texto capturado en "Datos de la sesión:" cuando la sesión es Sí.
+    datos_sesion: rec.sesionVirtualDetalle ?? "",
+    // Alias anterior, se conserva para plantillas ya existentes.
     sesion_virtual_detalle: rec.sesionVirtualDetalle ?? "",
     consecutivo_folio: rec.consecutivoFolio ?? "",
+    firma: rec.firma ?? "",
     persona_contralora: rec.personaContralora ?? "",
     fecha_impresion: new Date().toLocaleDateString("es-MX", {
       day: "2-digit", month: "long", year: "numeric",
@@ -108,6 +113,9 @@ export function buildTemplateData(r: Record<string, unknown>) {
 
 export const OPTION_FIELDS = [
   "asunto", "ente", "signadoPor", "cargoPuesto",
-  "organoColegiado", "tipoSesion", "personaContralora",
+  "organoColegiado", "tipoSesion", "personaContralora", "firma",
 ] as const;
 export type OptionField = (typeof OPTION_FIELDS)[number];
+
+// Siglas de FIRMA precargadas (el combobox sigue siendo creable: se pueden añadir más).
+export const FIRMA_DEFAULTS = ["LMD", "MDCT", "MAPG", "SYOM", "ACP"] as const;

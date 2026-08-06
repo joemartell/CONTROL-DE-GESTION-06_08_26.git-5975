@@ -3,7 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { base } from "../__core/app";
 import { db } from "../database";
 import * as schema from "../database/schema";
-import { OPTION_FIELDS } from "../lib/records";
+import { FIRMA_DEFAULTS, OPTION_FIELDS } from "../lib/records";
 
 const fieldEnum = z.enum(OPTION_FIELDS);
 
@@ -19,6 +19,12 @@ export const options = {
     for (const row of rows) {
       (grouped[row.field] ??= []).push(row.value);
     }
+    // Siglas de FIRMA siempre disponibles, aunque aún no existan registros.
+    const firma = grouped.firma ?? [];
+    for (const sigla of FIRMA_DEFAULTS) {
+      if (!firma.includes(sigla)) firma.push(sigla);
+    }
+    grouped.firma = firma.sort((a, b) => a.localeCompare(b, "es"));
     return grouped;
   }),
 

@@ -19,11 +19,13 @@ type FormState = {
   ente: string;
   organoColegiado: string;
   fechaHoraSesion: string;
+  numeroSesion: string;
   tipoSesion: string;
   carpetaTrabajo: string;
   sesionVirtualPresencial: string;
   sesionVirtualDetalle: string;
   consecutivoFolio: string;
+  firma: string;
   personaContralora: string;
 };
 
@@ -39,11 +41,13 @@ const empty: FormState = {
   ente: "",
   organoColegiado: "",
   fechaHoraSesion: "",
+  numeroSesion: "",
   tipoSesion: "",
   carpetaTrabajo: "No",
   sesionVirtualPresencial: "No",
   sesionVirtualDetalle: "",
   consecutivoFolio: "",
+  firma: "",
   personaContralora: "",
 };
 
@@ -63,11 +67,13 @@ function fromRecord(r: Record<string, unknown> | null): FormState {
     ente: g("ente"),
     organoColegiado: g("organoColegiado"),
     fechaHoraSesion: g("fechaHoraSesion"),
+    numeroSesion: g("numeroSesion"),
     tipoSesion: g("tipoSesion"),
     carpetaTrabajo: g("carpetaTrabajo") || "No",
     sesionVirtualPresencial: g("sesionVirtualPresencial") || "No",
     sesionVirtualDetalle: g("sesionVirtualDetalle"),
     consecutivoFolio: g("consecutivoFolio"),
+    firma: g("firma"),
     personaContralora: g("personaContralora"),
   };
 }
@@ -244,6 +250,14 @@ export function RecordForm({
           />
         </div>
         <div>
+          <Label>Número de la sesión</Label>
+          <Input
+            value={form.numeroSesion}
+            onChange={(e) => set("numeroSesion", e.target.value)}
+            placeholder="Ej. 03"
+          />
+        </div>
+        <div>
           <Label>Tipo de sesión</Label>
           <CreatableCombobox
             value={form.tipoSesion}
@@ -274,8 +288,9 @@ export function RecordForm({
           />
           {form.sesionVirtualPresencial === "Sí" && (
             <div className="mt-3 animate-rise">
+              <Label>Datos de la sesión:</Label>
               <Textarea
-                placeholder="Datos de la sesión virtual / presencial…"
+                placeholder="Escribe aquí los datos de la sesión…"
                 value={form.sesionVirtualDetalle}
                 onChange={(e) => set("sesionVirtualDetalle", e.target.value)}
               />
@@ -285,12 +300,20 @@ export function RecordForm({
       </Section>
 
       <Section title="Folio">
-        <div className="md:col-span-2">
+        <div>
           <Label>Consecutivo folio (SCG/DCC/CE/----/2026)</Label>
           <Input
             value={form.consecutivoFolio}
             onChange={(e) => set("consecutivoFolio", e.target.value)}
             placeholder="SCG/DCC/CE/----/2026"
+          />
+        </div>
+        <div>
+          <Label>Firma</Label>
+          <CreatableCombobox
+            value={form.firma}
+            onChange={(v) => set("firma", v)}
+            suggestions={opt("firma")}
           />
         </div>
       </Section>

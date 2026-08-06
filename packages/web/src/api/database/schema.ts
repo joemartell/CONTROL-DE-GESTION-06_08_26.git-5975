@@ -25,6 +25,7 @@ export const records = sqliteTable("records", {
   ente: text("ente"),
   organoColegiado: text("organo_colegiado"),
   fechaHoraSesion: text("fecha_hora_sesion"), // ISO datetime
+  numeroSesion: text("numero_sesion"),
   tipoSesion: text("tipo_sesion"),
 
   carpetaTrabajo: text("carpeta_trabajo"), // "Sí" | "No"
@@ -32,6 +33,7 @@ export const records = sqliteTable("records", {
   sesionVirtualDetalle: text("sesion_virtual_detalle"),
 
   consecutivoFolio: text("consecutivo_folio"),
+  firma: text("firma"), // LMD | MDCT | MAPG | SYOM | ACP (creable)
   personaContralora: text("persona_contralora"),
 
   createdAt: integer("created_at", { mode: "timestamp" })

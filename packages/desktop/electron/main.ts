@@ -21,7 +21,7 @@ if (process.env.ELECTRON_DISABLE_GPU === "1") {
 }
 
 const isDev = process.env.NODE_ENV !== "production";
-const WEB_DEV_URL = process.env.WEBSITE_URL ?? "http://localhost:3000";
+const WEB_DEV_URL = process.env.WEBSITE_URL ?? "http://localhost:4200";
 const WEB_DIST = path.join(__dirname, "../web-dist");
 
 let win: BrowserWindow | null = null;
