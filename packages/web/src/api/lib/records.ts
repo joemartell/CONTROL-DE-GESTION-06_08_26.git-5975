@@ -49,11 +49,50 @@ export function resolveRuleKey(r: {
   return null;
 }
 
+const MONTH_NAMES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+] as const;
+
+const WEEKDAY_NAMES = [
+  "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado",
+] as const;
+
+function parseDateOnly(value: string | null | undefined): {
+  year: number;
+  month: number;
+  day: number;
+} | null {
+  if (!value) return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  return { year, month, day };
+}
+
 function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso.length <= 10 ? iso + "T00:00:00" : iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const parts = parseDateOnly(iso);
+  if (!parts) return iso ?? "";
+
+  const weekdayIndex = new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
+  const weekday = WEEKDAY_NAMES[weekdayIndex] ?? "";
+  const month = MONTH_NAMES[parts.month - 1] ?? "";
+
+  return `${weekday}, ${parts.day} de ${month} de ${parts.year}`;
+}
+
+function fmtHoraRecepcion(value: string | null | undefined): string {
+  if (!value) return "";
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return value;
+
+  const hour = match[1].padStart(2, "0");
+  return `a las ${hour}:${match[2]} horas`;
 }
 
 function fmtDateTime(iso: string | null | undefined): string {
@@ -64,6 +103,21 @@ function fmtDateTime(iso: string | null | undefined): string {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   });
+}
+
+function fmtFechaHoraSesion(value: string | null | undefined): string {
+  if (!value) return "";
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})/);
+  if (!match) return value;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = match[4].padStart(2, "0");
+  const minute = match[5];
+  const monthName = MONTH_NAMES[month - 1] ?? "";
+
+  return `${day} de ${monthName} de ${year} a las ${hour}:${minute} horas`;
 }
 
 // Datos disponibles como {etiquetas} dentro de la plantilla .docx
@@ -84,7 +138,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     mes: MESES[(rec.mes ?? 1) - 1] ?? "",
     anio: String(rec.anio ?? ""),
     fecha_recepcion_oficialia: fmtDate(rec.fechaRecepcionOficialia),
-    hora_recepcion: rec.horaRecepcion ?? "",
+    hora_recepcion: fmtHoraRecepcion(rec.horaRecepcion),
     fecha_hora_recepcion_dcc: fmtDateTime(rec.fechaHoraRecepcionDcc),
     volante_oficialia: rec.volanteOficialia ?? "",
     numero_oficio_ente: rec.numeroOficioEnte ?? "",
@@ -93,7 +147,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     asunto: rec.asunto ?? "",
     ente: rec.ente ?? "",
     organo_colegiado: rec.organoColegiado ?? "",
-    fecha_hora_sesion: fmtDateTime(rec.fechaHoraSesion),
+    fecha_hora_sesion: fmtFechaHoraSesion(rec.fechaHoraSesion),
     numero_sesion: rec.numeroSesion ?? "",
     tipo_sesion: rec.tipoSesion ?? "",
     carpeta_trabajo: rec.carpetaTrabajo ?? "",
