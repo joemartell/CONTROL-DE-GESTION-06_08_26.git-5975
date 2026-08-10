@@ -11,9 +11,6 @@
   "categories": {
     "correctness": "error"
   },
-  "jsPlugins": [
-    "./__lint-rules/index.mjs"
-  ],
   "rules": {
     "react/react-in-jsx-scope": "off",
     "template/asset-imports": "error",
@@ -52,8 +49,7 @@
   "ignorePatterns": [
     "dist/**",
     "dist-electron/**",
-    ".expo/**",
-    "packages/web/public/runable.js"
+    ".expo/**"
   ],
   "env": {
     "builtin": true,
