@@ -98,22 +98,28 @@ app.get("/api/records/:id/print", async (c) => {
     return c.json({ error: "El archivo de la plantilla no existe" }, 404);
   }
 
-  try {
-    const buffer = renderDocx(tpl.storedFilename, rec);
-    const safeAsunto = (rec.asunto ?? "registro")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .slice(0, 40);
-    const filename = `registro-${rec.consecutivo}-${safeAsunto}.docx`;
-    return new Response(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type": DOCX_MIME,
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      },
-    });
-  } catch (err) {
+try {
+  const buffer = renderDocx(tpl.storedFilename, rec);
+
+  const safeAsunto = (rec.asunto ?? "registro")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .slice(0, 40);
+
+  const filename = `registro-${rec.consecutivo}-${safeAsunto}.docx`;
+
+  const body = new Uint8Array(buffer.byteLength);
+  body.set(buffer);
+
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": DOCX_MIME,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+} catch (err) {
     return c.json(
       { error: "No se pudo generar el documento. Revisa las etiquetas de la plantilla.", detail: String(err) },
       500,

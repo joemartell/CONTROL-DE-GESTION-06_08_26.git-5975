@@ -116,7 +116,6 @@
           "src/web/types/__analytics.d.ts",
           "vite/__plugins/asset-optimizer-plugin.ts",
           "vite/__plugins/hono-dev-plugin.ts",
-          "vite/__plugins/runable-analytics-plugin.ts",
           "website.config.json"
         ]
       }
