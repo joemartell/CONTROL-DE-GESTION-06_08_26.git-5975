@@ -119,3 +119,38 @@ export type OptionField = (typeof OPTION_FIELDS)[number];
 
 // Siglas de FIRMA precargadas (el combobox sigue siendo creable: se pueden añadir más).
 export const FIRMA_DEFAULTS = ["LMD", "MDCT", "MAPG", "SYOM", "ACP"] as const;
+
+/**
+ * Normaliza las siglas de FIRMA para comparar plantillas contra registros:
+ * sin acentos, sin espacios y en MAYÚSCULAS. Devuelve null si viene vacío.
+ */
+export function normalizaFirma(v: string | null | undefined): string | null {
+  const s = norm(v).replace(/\s+/g, "").toUpperCase();
+  return s || null;
+}
+
+/**
+ * Elige la plantilla para un registro entre las disponibles.
+ * Prioridad: 1) misma regla + misma firma  2) misma regla sin firma
+ *            3) null => la UI pregunta cuál usar.
+ */
+export function eligePlantilla<T extends { ruleKey: string | null; firma: string | null }>(
+  plantillas: T[],
+  ruleKey: RuleKey | null,
+  firmaRegistro: string | null | undefined,
+): { template: T | null; matchedBy: "regla_y_firma" | "regla" | null } {
+  if (!ruleKey) return { template: null, matchedBy: null };
+
+  const deLaRegla = plantillas.filter((t) => t.ruleKey === ruleKey);
+  const firma = normalizaFirma(firmaRegistro);
+
+  if (firma) {
+    const porFirma = deLaRegla.find((t) => normalizaFirma(t.firma) === firma);
+    if (porFirma) return { template: porFirma, matchedBy: "regla_y_firma" };
+  }
+
+  const general = deLaRegla.find((t) => !normalizaFirma(t.firma));
+  if (general) return { template: general, matchedBy: "regla" };
+
+  return { template: null, matchedBy: null };
+}

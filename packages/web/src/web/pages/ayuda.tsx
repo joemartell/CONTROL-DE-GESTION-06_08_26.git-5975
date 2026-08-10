@@ -34,6 +34,8 @@ const RULES: [string, string][] = [
   ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = Sí", "Plantilla específica 1"],
   ["Carpeta de trabajo = Sí  ·  Sesión virtual/presencial = No", "Plantilla específica 2"],
   ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = No", "Plantilla específica 3"],
+  ["Dentro de la regla: FIRMA con plantilla propia", "Esa plantilla (tiene prioridad)"],
+  ["Dentro de la regla: FIRMA sin plantilla propia", "Plantilla general de la regla"],
   ["Cualquier otro caso", "La app pregunta cuál plantilla usar"],
 ];
 
@@ -57,6 +59,20 @@ export default function Ayuda() {
         <Card icon={Printer} title="Cómo funciona la impresión">
           <p className="mb-2">
             Cada registro tiene el botón <b>Imprimir</b>. La app decide qué plantilla usar según estas reglas y descarga un nuevo <b>.docx</b> con los datos del registro:
+          </p>
+          <ol className="mb-3 list-decimal space-y-1 rounded-lg border border-accent/40 bg-accent/10 p-4 pl-8">
+            <li>
+              Busca una plantilla de la <b>misma regla y la misma FIRMA</b> del registro.
+            </li>
+            <li>
+              Si esa firma no tiene plantilla propia, usa la <b>plantilla general</b> de la regla
+              (la que se subió con «Todas las firmas»).
+            </li>
+            <li>Si no existe ninguna de las dos, la app <b>pregunta</b> cuál usar.</li>
+          </ol>
+          <p className="mb-2">
+            Es decir: puedes tener una plantilla distinta por cada firma (LMD, MDCT, MAPG, SYOM, ACP)
+            dentro de la misma regla. Se configuran en <b>Plantillas → Por firma</b>.
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">

@@ -57,9 +57,12 @@ export const options = sqliteTable("options", {
 // Plantillas .docx cargadas. ruleKey identifica la plantilla usada por reglas
 // (convocatoria | extemporaneo | no_carpeta_si_virtual | si_carpeta_no_virtual | ambos_no).
 // ruleKey = null => plantilla adicional de la biblioteca (elegible manualmente).
+// firma = siglas (LMD, MDCT, ...) => la plantilla aplica solo a esa firma.
+// firma = null => plantilla general de la regla (se usa si no hay una por firma).
 export const templates = sqliteTable("templates", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ruleKey: text("rule_key"),
+  firma: text("firma"),
   name: text("name").notNull(),
   storedFilename: text("stored_filename").notNull(),
   originalName: text("original_name").notNull(),

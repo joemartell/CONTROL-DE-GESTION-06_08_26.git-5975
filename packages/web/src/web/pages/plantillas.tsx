@@ -1,11 +1,16 @@
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { UploadCloud, FileText, Trash2, Loader2, Link2, CheckCircle2 } from "lucide-react";
+import {
+  UploadCloud, FileText, Trash2, Loader2, Link2, CheckCircle2,
+  ChevronDown, ChevronRight, PenLine,
+} from "lucide-react";
 import { Layout } from "../components/layout";
 import { Button } from "../components/ui/button";
 import { Input, Label } from "../components/ui/input";
 import { Modal } from "../components/ui/modal";
-import { useTemplates, useTemplateSlots, useDeleteTemplate, useSetTemplateRule } from "../queries/templates";
+import {
+  useTemplates, useTemplateSlots, useDeleteTemplate, useSetTemplateRule, useFirmas,
+} from "../queries/templates";
 import { orpc } from "../lib/api";
 
 const RULE_OPTIONS = [
@@ -21,6 +26,7 @@ export default function Plantillas() {
   const qc = useQueryClient();
   const templates = useTemplates();
   const slots = useTemplateSlots();
+  const firmas = useFirmas();
   const del = useDeleteTemplate();
   const setRule = useSetTemplateRule();
 
@@ -28,14 +34,19 @@ export default function Plantillas() {
   const [file, setFile] = React.useState<File | null>(null);
   const [name, setName] = React.useState("");
   const [ruleKey, setRuleKey] = React.useState("");
+  const [firma, setFirma] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [toDelete, setToDelete] = React.useState<any | null>(null);
+  const [abierta, setAbierta] = React.useState<string | null>(null);
 
-  const openUpload = (preselectRule = "") => {
+  const listaFirmas = firmas.data ?? [];
+
+  const openUpload = (preRule = "", preFirma = "") => {
     setFile(null);
     setName("");
-    setRuleKey(preselectRule);
+    setRuleKey(preRule);
+    setFirma(preFirma);
     setError(null);
     setUploadOpen(true);
   };
@@ -52,6 +63,7 @@ export default function Plantillas() {
       fd.append("file", file);
       fd.append("name", name || file.name.replace(/\.docx$/i, ""));
       if (ruleKey) fd.append("ruleKey", ruleKey);
+      if (ruleKey && firma) fd.append("firma", firma);
       const res = await fetch("/api/templates/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -83,31 +95,87 @@ export default function Plantillas() {
         </header>
 
         <section className="mb-8">
-          <h2 className="mb-3 font-display text-lg font-semibold text-primary">Plantillas por regla</h2>
+          <h2 className="mb-3 font-display text-lg font-semibold text-primary">Plantillas por regla y firma</h2>
           <p className="mb-3 text-sm text-muted-foreground">
-            Cada regla usa una plantilla al imprimir. Si una regla no tiene plantilla, la app preguntará cuál usar.
+            Al imprimir, la app busca primero una plantilla de la <b>misma regla y misma firma</b>.
+            Si esa firma no tiene una propia, usa la <b>plantilla general</b> de la regla.
+            Si no hay ninguna, pregunta cuál usar.
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(slots.data ?? []).map((s) => (
-              <div
-                key={s.ruleKey}
-                className="rounded-lg border border-border bg-card p-4"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</p>
-                {s.template ? (
-                  <div className="mt-2 flex items-center gap-2 text-sm font-medium text-ink">
-                    <CheckCircle2 className="size-4 text-green-700" /> {s.template.name}
+          <div className="space-y-3">
+            {(slots.data ?? []).map((s: any) => {
+              const abierto = abierta === s.ruleKey;
+              const conFirma = (s.porFirma ?? []).filter((f: any) => f.template);
+              return (
+                <div key={s.ruleKey} className="rounded-lg border border-border bg-card">
+                  <div className="flex flex-wrap items-center gap-3 p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {s.label}
+                      </p>
+                      {s.template ? (
+                        <div className="mt-2 flex items-center gap-2 text-sm font-medium text-ink">
+                          <CheckCircle2 className="size-4 text-green-700" />
+                          <span className="truncate">{s.template.name}</span>
+                          <span className="text-xs font-normal text-muted-foreground">(general)</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openUpload(s.ruleKey)}
+                          className="mt-2 text-sm font-medium text-primary underline"
+                        >
+                          Asignar plantilla general…
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setAbierta(abierto ? null : s.ruleKey)}
+                      className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold text-primary hover:bg-secondary"
+                    >
+                      {abierto ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                      Por firma
+                      {conFirma.length > 0 && (
+                        <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+                          {conFirma.length}
+                        </span>
+                      )}
+                    </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => openUpload(s.ruleKey)}
-                    className="mt-2 text-sm font-medium text-primary underline"
-                  >
-                    Asignar plantilla…
-                  </button>
-                )}
-              </div>
-            ))}
+
+                  {abierto && (
+                    <div className="animate-rise border-t border-border bg-secondary/40 p-4">
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        Plantilla distinta para cada firma en esta regla. Las que quedan vacías usan la general.
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {(s.porFirma ?? []).map((f: any) => (
+                          <div
+                            key={f.firma}
+                            className="flex items-center gap-2 rounded-md border border-border bg-white px-3 py-2"
+                          >
+                            <span className="w-14 shrink-0 font-display text-sm font-bold text-wine-900">
+                              {f.firma}
+                            </span>
+                            {f.template ? (
+                              <span className="flex min-w-0 items-center gap-1.5 text-sm text-ink">
+                                <PenLine className="size-3.5 shrink-0 text-green-700" />
+                                <span className="truncate">{f.template.name}</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => openUpload(s.ruleKey, f.firma)}
+                                className="text-sm text-primary underline"
+                              >
+                                Asignar…
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -123,7 +191,7 @@ export default function Plantillas() {
             </p>
           ) : (
             <div className="space-y-2">
-              {(templates.data ?? []).map((t) => (
+              {(templates.data ?? []).map((t: any) => (
                 <div key={t.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3">
                   <FileText className="size-5 text-primary" />
                   <div className="min-w-0 flex-1">
@@ -135,12 +203,34 @@ export default function Plantillas() {
                     <select
                       value={t.ruleKey ?? ""}
                       onChange={(e) =>
-                        setRule.mutate({ id: t.id, ruleKey: (e.target.value || null) as any })
+                        setRule.mutate({
+                          id: t.id,
+                          ruleKey: (e.target.value || null) as any,
+                          firma: e.target.value ? t.firma : null,
+                        })
                       }
                       className="h-9 rounded-md border border-input bg-white px-2 text-xs text-ink outline-none focus:border-primary"
                     >
                       {RULE_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={t.firma ?? ""}
+                      disabled={!t.ruleKey}
+                      title={t.ruleKey ? "Firma" : "Primero asigna una regla"}
+                      onChange={(e) =>
+                        setRule.mutate({
+                          id: t.id,
+                          ruleKey: t.ruleKey,
+                          firma: e.target.value || null,
+                        })
+                      }
+                      className="h-9 rounded-md border border-input bg-white px-2 text-xs text-ink outline-none focus:border-primary disabled:opacity-50"
+                    >
+                      <option value="">Todas las firmas</option>
+                      {listaFirmas.map((f) => (
+                        <option key={f} value={f}>{f}</option>
                       ))}
                     </select>
                     <button
@@ -204,6 +294,25 @@ export default function Plantillas() {
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <Label>Firma</Label>
+            <select
+              value={firma}
+              disabled={!ruleKey}
+              onChange={(e) => setFirma(e.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm text-ink outline-none focus:border-primary disabled:opacity-50"
+            >
+              <option value="">Todas las firmas (plantilla general de la regla)</option>
+              {listaFirmas.map((f) => (
+                <option key={f} value={f}>Solo firma {f}</option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {ruleKey
+                ? "Elige una firma si esta plantilla es exclusiva de esa persona; deja «Todas» para que sirva de respaldo."
+                : "Primero elige una regla para poder asignar una firma."}
+            </p>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

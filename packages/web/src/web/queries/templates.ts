@@ -9,6 +9,10 @@ export function useTemplateSlots() {
   return useQuery(orpc.templates.slots.queryOptions());
 }
 
+export function useFirmas() {
+  return useQuery(orpc.templates.firmas.queryOptions());
+}
+
 export function useResolvePrint(id: number, enabled: boolean) {
   return useQuery(
     orpc.templates.resolveForRecord.queryOptions({ input: { id }, enabled }),

@@ -1,6 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const queryClient = new QueryClient();
+// Varios equipos pueden trabajar al mismo tiempo contra el mismo servidor,
+// así que refrescamos periódicamente para ver los cambios de los demás.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchInterval: 10_000,
+      refetchOnWindowFocus: true,
+      staleTime: 5_000,
+    },
+  },
+});
 
 interface ProviderProps {
   children: React.ReactNode;

@@ -12,7 +12,7 @@ import * as schema from "./database/schema";
 import { eq } from "drizzle-orm";
 import { TEMPLATES_DIR } from "./lib/storage";
 import { renderDocx } from "./lib/docx";
-import { RULE_KEYS } from "./lib/records";
+import { RULE_KEYS, normalizaFirma } from "./lib/records";
 
 export const router = {
   ping,
@@ -37,6 +37,8 @@ app.post("/api/templates/upload", async (c) => {
   const name = String(form.get("name") ?? "").trim();
   const ruleKeyRaw = String(form.get("ruleKey") ?? "").trim();
   const ruleKey = RULE_KEYS.includes(ruleKeyRaw as never) ? ruleKeyRaw : null;
+  // La firma solo aplica junto con una regla: (regla + firma) = plantilla específica.
+  const firma = ruleKey ? normalizaFirma(String(form.get("firma") ?? "")) : null;
 
   if (!(file instanceof File)) {
     return c.json({ error: "Falta el archivo .docx" }, 400);
@@ -49,18 +51,27 @@ app.post("/api/templates/upload", async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   writeFileSync(resolve(TEMPLATES_DIR, storedFilename), buffer);
 
-  // Si se asigna a un slot por reglas, liberar la plantilla previa de ese slot.
+  // Si se asigna a un slot (regla + firma), liberar la plantilla previa de ESE slot.
   if (ruleKey) {
-    await db
-      .update(schema.templates)
-      .set({ ruleKey: null })
+    const ocupantes = await db
+      .select()
+      .from(schema.templates)
       .where(eq(schema.templates.ruleKey, ruleKey));
+    for (const o of ocupantes) {
+      if (normalizaFirma(o.firma) === firma) {
+        await db
+          .update(schema.templates)
+          .set({ ruleKey: null, firma: null })
+          .where(eq(schema.templates.id, o.id));
+      }
+    }
   }
 
   const [row] = await db
     .insert(schema.templates)
     .values({
       ruleKey,
+      firma,
       name: name || file.name.replace(/\.docx$/i, ""),
       storedFilename,
       originalName: file.name,

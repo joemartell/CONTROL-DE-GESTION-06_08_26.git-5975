@@ -33,7 +33,9 @@ export function PrintDialog({
   }, [open, id]);
 
   const data = resolve.data;
-  const all = (data?.allTemplates ?? []) as { id: number; name: string; ruleKey: string | null }[];
+  const all = (data?.allTemplates ?? []) as {
+    id: number; name: string; ruleKey: string | null; firma: string | null;
+  }[];
 
   return (
     <Modal
@@ -65,8 +67,17 @@ export function PrintDialog({
           <div className="mb-4 flex items-start gap-3 rounded-lg border border-green-600/30 bg-green-600/10 p-3">
             <CheckCircle2 className="mt-0.5 size-5 text-green-700" />
             <div className="text-sm">
-              <p className="font-semibold text-ink">Plantilla determinada por regla</p>
+              <p className="font-semibold text-ink">
+                {data.matchedBy === "regla_y_firma"
+                  ? `Plantilla de la firma ${data.firma}`
+                  : "Plantilla determinada por regla"}
+              </p>
               <p className="text-muted-foreground">{data.ruleLabel}</p>
+              {data.matchedBy === "regla" && data.firma && (
+                <p className="text-xs text-muted-foreground">
+                  La firma {data.firma} no tiene plantilla propia: se usa la general de la regla.
+                </p>
+              )}
               <p className="mt-1 font-medium text-primary">
                 <FileText className="mr-1 inline size-4" />
                 {data.template.name}
@@ -100,7 +111,12 @@ export function PrintDialog({
                 }`}
               >
                 <FileText className="size-4 shrink-0" />
-                {t.name}
+                <span className="min-w-0 flex-1 truncate">{t.name}</span>
+                {t.firma && (
+                  <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-wine-900">
+                    {t.firma}
+                  </span>
+                )}
               </button>
             ))}
           </div>
