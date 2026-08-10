@@ -40,7 +40,7 @@ const FORMATTABLE_TAGS: [string, string][] = [
   ["persona_contralora", "Persona contralora ciudadana"],
 ];
 
-const FORMAT_TAGS: [string, string][] = FORMATTABLE_TAGS.flatMap(([tag, desc]) => [
+const FORMAT_TAGS = FORMATTABLE_TAGS.flatMap<[string, string]>(([tag, desc]) => [
   [`{${tag}_mayusculas}`, `${desc} · MAYÚSCULAS`],
   [`{${tag}_minusculas}`, `${desc} · minúsculas`],
   [`{${tag}_intercalado}`, `${desc} · Intercalado / tipo título`],
