@@ -120,6 +120,82 @@ function fmtFechaHoraSesion(value: string | null | undefined): string {
   return `${day} de ${monthName} de ${year} a las ${hour}:${minute} horas`;
 }
 
+const TITLE_CASE_LOWER_WORDS = new Set([
+  "a", "al", "con", "de", "del", "desde", "e", "el", "en", "entre",
+  "la", "las", "los", "o", "para", "por", "sin", "u", "y",
+]);
+
+// Acrónimos institucionales frecuentes que deben conservarse en mayúsculas
+// cuando se usa la variante "intercalado".
+const TITLE_CASE_ACRONYMS = new Set([
+  "CAAPS", "CARECI", "CDMX", "CE", "CURP", "DCC", "IR", "ISSSTE", "JUD",
+  "LP", "RFC", "SAAPS", "SCG", "UAM", "UNAM",
+]);
+
+function toMayusculas(value: string | null | undefined): string {
+  return (value ?? "").toLocaleUpperCase("es-MX");
+}
+
+function toMinusculas(value: string | null | undefined): string {
+  return (value ?? "").toLocaleLowerCase("es-MX");
+}
+
+function isAcronymToken(value: string): boolean {
+  const upper = value.toLocaleUpperCase("es-MX");
+  if (/^(?:[A-ZÁÉÍÓÚÜÑ]\.){2,}$/u.test(upper)) return true;
+
+  const pieces = upper.split(/[\/-]/);
+  return pieces.length > 0 && pieces.every((piece) => TITLE_CASE_ACRONYMS.has(piece));
+}
+
+// Formato "intercalado" = estilo título en español:
+// "SECRETARÍA DE GESTIÓN INTEGRAL..." -> "Secretaría de Gestión Integral..."
+// Conserva partículas como "de", "la", "y" en minúscula y acrónimos conocidos.
+function toIntercalado(value: string | null | undefined): string {
+  const text = (value ?? "").trim();
+  if (!text) return "";
+
+  let wordIndex = 0;
+  return text
+    .split(/\s+/)
+    .map((raw) => {
+      const leading = raw.match(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]*/u)?.[0] ?? "";
+      const trailing = raw.match(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9.]*$/u)?.[0] ?? "";
+      const core = raw.slice(leading.length, raw.length - trailing.length);
+      if (!core) return raw;
+
+      const lower = core.toLocaleLowerCase("es-MX");
+      const isFirstWord = wordIndex === 0;
+      wordIndex += 1;
+
+      let formatted: string;
+      if (isAcronymToken(core)) {
+        formatted = core.toLocaleUpperCase("es-MX");
+      } else if (!isFirstWord && TITLE_CASE_LOWER_WORDS.has(lower)) {
+        formatted = lower;
+      } else {
+        formatted = lower.replace(
+          /(^|[\/-])([a-záéíóúüñ])/gu,
+          (_match, separator: string, letter: string) =>
+            `${separator}${letter.toLocaleUpperCase("es-MX")}`,
+        );
+      }
+
+      return `${leading}${formatted}${trailing}`;
+    })
+    .join(" ");
+}
+
+function caseVariants(prefix: string, value: string | null | undefined): Record<string, string> {
+  const original = value ?? "";
+  return {
+    [prefix]: original,
+    [`${prefix}_mayusculas`]: toMayusculas(original),
+    [`${prefix}_minusculas`]: toMinusculas(original),
+    [`${prefix}_intercalado`]: toIntercalado(original),
+  };
+}
+
 // Datos disponibles como {etiquetas} dentro de la plantilla .docx
 export function buildTemplateData(r: Record<string, unknown>) {
   const rec = r as {
@@ -142,23 +218,23 @@ export function buildTemplateData(r: Record<string, unknown>) {
     fecha_hora_recepcion_dcc: fmtDateTime(rec.fechaHoraRecepcionDcc),
     volante_oficialia: rec.volanteOficialia ?? "",
     numero_oficio_ente: rec.numeroOficioEnte ?? "",
-    signado_por: rec.signadoPor ?? "",
-    cargo_puesto: rec.cargoPuesto ?? "",
-    asunto: rec.asunto ?? "",
-    ente: rec.ente ?? "",
-    organo_colegiado: rec.organoColegiado ?? "",
+    ...caseVariants("signado_por", rec.signadoPor),
+    ...caseVariants("cargo_puesto", rec.cargoPuesto),
+    ...caseVariants("asunto", rec.asunto),
+    ...caseVariants("ente", rec.ente),
+    ...caseVariants("organo_colegiado", rec.organoColegiado),
     fecha_hora_sesion: fmtFechaHoraSesion(rec.fechaHoraSesion),
     numero_sesion: rec.numeroSesion ?? "",
-    tipo_sesion: rec.tipoSesion ?? "",
+    ...caseVariants("tipo_sesion", rec.tipoSesion),
     carpeta_trabajo: rec.carpetaTrabajo ?? "",
     sesion_virtual_presencial: rec.sesionVirtualPresencial ?? "",
     // Texto capturado en "Datos de la sesión:" cuando la sesión es Sí.
-    datos_sesion: rec.sesionVirtualDetalle ?? "",
-    // Alias anterior, se conserva para plantillas ya existentes.
-    sesion_virtual_detalle: rec.sesionVirtualDetalle ?? "",
+    ...caseVariants("datos_sesion", rec.sesionVirtualDetalle),
+    // Alias anterior, se conserva para plantillas ya existentes y también admite formatos.
+    ...caseVariants("sesion_virtual_detalle", rec.sesionVirtualDetalle),
     consecutivo_folio: rec.consecutivoFolio ?? "",
     firma: rec.firma ?? "",
-    persona_contralora: rec.personaContralora ?? "",
+    ...caseVariants("persona_contralora", rec.personaContralora),
     fecha_impresion: new Date().toLocaleDateString("es-MX", {
       day: "2-digit", month: "long", year: "numeric",
     }),
