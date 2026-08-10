@@ -1,7 +1,7 @@
 import { Layout } from "../components/layout";
-import { FileText, FolderTree, Printer, Tags } from "lucide-react";
+import { FileText, FolderTree, Printer, Tags, Type } from "lucide-react";
 
-const TAGS: [string, string][] = [
+const BASE_TAGS: [string, string][] = [
   ["{consecutivo}", "Número consecutivo automático"],
   ["{mes}", "Mes en texto (Enero…Diciembre)"],
   ["{anio}", "Año"],
@@ -27,6 +27,26 @@ const TAGS: [string, string][] = [
   ["{persona_contralora}", "Persona contralora ciudadana convocada"],
   ["{fecha_impresion}", "Fecha en que se imprime el documento"],
 ];
+
+const FORMATTABLE_TAGS: [string, string][] = [
+  ["signado_por", "Signado por"],
+  ["cargo_puesto", "Cargo / Puesto"],
+  ["asunto", "Asunto"],
+  ["ente", "Ente"],
+  ["organo_colegiado", "Órgano Colegiado"],
+  ["tipo_sesion", "Tipo de sesión"],
+  ["datos_sesion", "Datos de la sesión"],
+  ["sesion_virtual_detalle", "Alias de datos de la sesión"],
+  ["persona_contralora", "Persona contralora ciudadana"],
+];
+
+const FORMAT_TAGS: [string, string][] = FORMATTABLE_TAGS.flatMap(([tag, desc]) => [
+  [`{${tag}_mayusculas}`, `${desc} · MAYÚSCULAS`],
+  [`{${tag}_minusculas}`, `${desc} · minúsculas`],
+  [`{${tag}_intercalado}`, `${desc} · Intercalado / tipo título`],
+]);
+
+const TAGS: [string, string][] = [...BASE_TAGS, ...FORMAT_TAGS];
 
 const RULES: [string, string][] = [
   ["ASUNTO = «Convocatoria»", "Plantilla de Convocatoria"],
@@ -99,12 +119,49 @@ export default function Ayuda() {
               <code className="rounded bg-secondary px-1">{"{asunto}"}</code> o{" "}
               <code className="rounded bg-secondary px-1">{"{consecutivo_folio}"}</code>.
             </li>
+            <li>Para controlar mayúsculas/minúsculas, usa una de las variantes explicadas abajo.</li>
             <li>Guarda el archivo en formato <b>.docx</b>.</li>
             <li>Entra a la pestaña <b>Plantillas</b>, pulsa <b>Subir plantilla</b>, elige el archivo y asígnalo a la regla que corresponda.</li>
             <li>Listo: al imprimir un registro, la app reemplaza cada etiqueta por su valor real.</li>
           </ol>
           <p className="mt-3 rounded-md bg-accent/10 p-3 text-[13px] text-wine-900">
             Consejo: escribe la etiqueta de un solo tirón (sin autocorrección que parta las llaves) para que Word no la divida internamente.
+          </p>
+        </Card>
+
+        <Card icon={Type} title="Formatos de mayúsculas y minúsculas">
+          <p className="mb-3">
+            Los campos de texto principales pueden imprimirse en su valor original o con tres variantes. Solo cambia la etiqueta en Word; el valor guardado en la base de datos no se modifica.
+          </p>
+          <div className="mb-4 overflow-hidden rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary text-left text-wine-900">
+                <tr>
+                  <th className="px-3 py-2">Formato</th>
+                  <th className="px-3 py-2">Ejemplo para Signado por</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2"><code>{"{signado_por_mayusculas}"}</code></td>
+                  <td className="px-3 py-2">M.D. ERIKA ALEJANDRA BARBA LUNA</td>
+                </tr>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2"><code>{"{signado_por_minusculas}"}</code></td>
+                  <td className="px-3 py-2">m.d. erika alejandra barba luna</td>
+                </tr>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2"><code>{"{signado_por_intercalado}"}</code></td>
+                  <td className="px-3 py-2">M.D. Erika Alejandra Barba Luna</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            La variante <b>intercalado</b> usa estilo título en español: mantiene partículas como «de», «del», «la», «las», «los», «y», «en», «por» y «para» en minúscula y conserva acrónimos institucionales frecuentes.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Ejemplo: <b>SECRETARÍA DE GESTIÓN INTEGRAL DE RIESGOS Y PROTECCIÓN CIVIL DE LA CIUDAD DE MÉXICO</b> se convierte en <b>Secretaría de Gestión Integral de Riesgos y Protección Civil de la Ciudad de México</b>.
           </p>
         </Card>
 
