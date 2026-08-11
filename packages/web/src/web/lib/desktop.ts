@@ -28,9 +28,6 @@ export interface ElectronAPI {
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
   close: () => Promise<void>;
-
-  // Events
-  onDeepLink: (cb: (url: string) => void) => () => void;
 }
 
 declare global {
