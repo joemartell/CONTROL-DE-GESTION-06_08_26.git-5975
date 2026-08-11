@@ -90,6 +90,34 @@ export const records = {
         .orderBy(desc(schema.records.consecutivo)),
     ),
 
+  // Registros de un mes y año para generar informes mensuales.
+  listByMonth: base
+    .input(z.object({ anio: z.number(), mes: z.number().min(1).max(12) }))
+    .handler(({ input }) =>
+      db
+        .select()
+        .from(schema.records)
+        .where(
+          and(
+            eq(schema.records.anio, input.anio),
+            eq(schema.records.mes, input.mes),
+          ),
+        )
+        .orderBy(desc(schema.records.consecutivo)),
+    ),
+
+  // Consolidado completo de todos los años y meses.
+  listAll: base.handler(() =>
+    db
+      .select()
+      .from(schema.records)
+      .orderBy(
+        desc(schema.records.anio),
+        desc(schema.records.mes),
+        desc(schema.records.consecutivo),
+      ),
+  ),
+
   years: base.handler(async () => {
     const rows = await db
       .select({ anio: schema.records.anio })
