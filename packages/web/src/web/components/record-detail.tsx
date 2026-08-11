@@ -16,6 +16,14 @@ function fmtDateTime(v: string | null) {
   return isNaN(d.getTime()) ? v : d.toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+function isExtemporaneo(value: string | null | undefined) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase() === "extemporaneo";
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="grid grid-cols-1 gap-0.5 border-b border-border/70 py-2 sm:grid-cols-3">
@@ -69,6 +77,7 @@ export function RecordDetail({
         )}
         <Row label="Consecutivo folio" value={record.consecutivoFolio} />
         <Row label="Firma" value={record.firma} />
+        {isExtemporaneo(record.asunto) && <Row label="C.C.E.P." value={record.ccep} />}
       </dl>
     </Modal>
   );
