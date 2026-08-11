@@ -36,6 +36,7 @@ export const records = sqliteTable("records", {
   firma: text("firma"), // LMD | MDCT | MAPG | SYOM | ACP (creable)
   personaContralora: text("persona_contralora"),
   personaContraloraSuplente: text("persona_contralora_suplente"),
+  ccep: text("ccep"),
 
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
