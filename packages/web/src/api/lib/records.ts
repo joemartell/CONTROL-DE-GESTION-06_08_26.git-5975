@@ -209,7 +209,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     carpetaTrabajo: string | null; sesionVirtualPresencial: string | null;
     sesionVirtualDetalle: string | null; consecutivoFolio: string | null;
     firma: string | null; personaContralora: string | null;
-    personaContraloraSuplente: string | null;
+    personaContraloraSuplente: string | null; ccep: string | null;
   };
   return {
     consecutivo: String(rec.consecutivo ?? ""),
@@ -236,6 +236,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     firma: rec.firma ?? "",
     ...caseVariants("persona_contralora", rec.personaContralora),
     ...caseVariants("persona_contralora_suplente", rec.personaContraloraSuplente),
+    ...caseVariants("ccep", rec.ccep),
     fecha_impresion: new Date().toLocaleDateString("es-MX", {
       day: "2-digit", month: "long", year: "numeric",
     }),
@@ -244,7 +245,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
 
 export const OPTION_FIELDS = [
   "asunto", "ente", "signadoPor", "cargoPuesto",
-  "organoColegiado", "tipoSesion", "personaContralora", "personaContraloraSuplente", "firma",
+  "organoColegiado", "tipoSesion", "personaContralora", "personaContraloraSuplente", "firma", "ccep",
 ] as const;
 export type OptionField = (typeof OPTION_FIELDS)[number];
 
