@@ -1,11 +1,12 @@
 import * as React from "react";
 import { Link, useLocation } from "wouter";
-import { FileStack, FileText, HelpCircle, Landmark } from "lucide-react";
+import { FileSpreadsheet, FileStack, FileText, HelpCircle, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", label: "Registros", icon: FileStack },
   { to: "/plantillas", label: "Plantillas", icon: FileText },
+  { to: "/informe", label: "Informe", icon: FileSpreadsheet },
   { to: "/ayuda", label: "Ayuda", icon: HelpCircle },
 ];
 
