@@ -5,6 +5,16 @@ export function useRecordsByYear(anio: number) {
   return useQuery(orpc.records.listByYear.queryOptions({ input: { anio } }));
 }
 
+export function useRecordsByMonth(anio: number, mes: number) {
+  return useQuery(
+    orpc.records.listByMonth.queryOptions({ input: { anio, mes } }),
+  );
+}
+
+export function useAllRecords() {
+  return useQuery(orpc.records.listAll.queryOptions());
+}
+
 export function useYears() {
   return useQuery(orpc.records.years.queryOptions());
 }
