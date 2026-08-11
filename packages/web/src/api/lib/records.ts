@@ -65,9 +65,10 @@ function parseDateOnly(value: string | null | undefined): {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return null;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
+  const [, rawYear = "", rawMonth = "", rawDay = ""] = match;
+  const year = Number(rawYear);
+  const month = Number(rawMonth);
+  const day = Number(rawDay);
   if (!year || month < 1 || month > 12 || day < 1 || day > 31) return null;
 
   return { year, month, day };
@@ -89,8 +90,9 @@ function fmtHoraRecepcion(value: string | null | undefined): string {
   const match = value.match(/^(\d{1,2}):(\d{2})/);
   if (!match) return value;
 
-  const hour = match[1].padStart(2, "0");
-  return `a las ${hour}:${match[2]} horas`;
+  const [, rawHour = "", minute = ""] = match;
+  const hour = rawHour.padStart(2, "0");
+  return `a las ${hour}:${minute} horas`;
 }
 
 function fmtDateTime(iso: string | null | undefined): string {
@@ -108,11 +110,18 @@ function fmtFechaHoraSesion(value: string | null | undefined): string {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})/);
   if (!match) return value;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = match[4].padStart(2, "0");
-  const minute = match[5];
+  const [,
+    rawYear = "",
+    rawMonth = "",
+    rawDay = "",
+    rawHour = "",
+    minute = "",
+  ] = match;
+
+  const year = Number(rawYear);
+  const month = Number(rawMonth);
+  const day = Number(rawDay);
+  const hour = rawHour.padStart(2, "0");
   const monthName = MONTH_NAMES[month - 1] ?? "";
 
   return `${day} de ${monthName} de ${year} a las ${hour}:${minute} horas`;
