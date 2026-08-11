@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronDown, Plus } from "lucide-react";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Combobox creable: escribe o selecciona. Al escribir muestra sugerencias de
@@ -9,14 +9,19 @@ export function CreatableCombobox({
   onChange,
   suggestions,
   placeholder = "Escribe o selecciona…",
+  onDeleteSuggestion,
+  nonDeletableSuggestions = [],
 }: {
   value: string;
   onChange: (v: string) => void;
   suggestions: string[];
   placeholder?: string;
+  onDeleteSuggestion?: (value: string) => unknown | Promise<unknown>;
+  nonDeletableSuggestions?: string[];
 }) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState(value);
+  const [deleting, setDeleting] = React.useState<string | null>(null);
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => setQuery(value), [value]);
@@ -35,11 +40,22 @@ export function CreatableCombobox({
     .slice(0, 8);
   const exactExists = suggestions.some((s) => s.toLowerCase() === q);
   const canCreate = q.length > 0 && !exactExists;
+  const protectedValues = new Set(nonDeletableSuggestions.map((s) => s.toLowerCase()));
 
   const commit = (v: string) => {
     onChange(v);
     setQuery(v);
     setOpen(false);
+  };
+
+  const removeSuggestion = async (suggestion: string) => {
+    if (!onDeleteSuggestion || protectedValues.has(suggestion.toLowerCase())) return;
+    setDeleting(suggestion);
+    try {
+      await onDeleteSuggestion(suggestion);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   return (
@@ -78,17 +94,37 @@ export function CreatableCombobox({
               Agregar «{query.trim()}»
             </button>
           )}
-          {filtered.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => commit(s)}
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink hover:bg-secondary"
-            >
-              <span>{s}</span>
-              {s === value && <Check className="size-4 text-primary" />}
-            </button>
-          ))}
+          {filtered.map((s) => {
+            const deletable = !!onDeleteSuggestion && !protectedValues.has(s.toLowerCase());
+            return (
+              <div key={s} className="flex items-center hover:bg-secondary">
+                <button
+                  type="button"
+                  onClick={() => commit(s)}
+                  className="flex min-w-0 flex-1 items-center justify-between px-3 py-2 text-left text-sm text-ink"
+                >
+                  <span className="truncate">{s}</span>
+                  {s === value && <Check className="ml-2 size-4 shrink-0 text-primary" />}
+                </button>
+                {deletable && (
+                  <button
+                    type="button"
+                    title={`Eliminar opción ${s}`}
+                    aria-label={`Eliminar opción ${s}`}
+                    disabled={deleting === s}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void removeSuggestion(s);
+                    }}
+                    className="mr-1 flex size-8 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

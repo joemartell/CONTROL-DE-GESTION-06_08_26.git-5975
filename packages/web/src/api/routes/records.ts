@@ -26,6 +26,8 @@ const recordFields = z.object({
   consecutivoFolio: z.string().nullable().optional(),
   firma: z.string().nullable().optional(),
   personaContralora: z.string().nullable().optional(),
+  personaContraloraSuplente: z.string().nullable().optional(),
+  ccep: z.string().nullable().optional(),
 });
 
 type RecordFields = z.infer<typeof recordFields>;
@@ -36,7 +38,21 @@ function deriveMonthYear(fecha: string | null | undefined) {
   return { mes: valid.getMonth() + 1, anio: valid.getFullYear() };
 }
 
-// Guarda automáticamente valores nuevos de los comboboxes creables.
+function isExtemporaneo(asunto: string | null | undefined): boolean {
+  return (asunto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase() === "extemporaneo";
+}
+
+function sanitizeConditionalFields(fields: RecordFields): RecordFields {
+  return {
+    ...fields,
+    ccep: isExtemporaneo(fields.asunto) ? fields.ccep : "",
+  };
+}
+
 async function learnOptions(fields: RecordFields) {
   const map: Partial<Record<OptionField, string | null | undefined>> = {
     asunto: fields.asunto,
@@ -46,6 +62,9 @@ async function learnOptions(fields: RecordFields) {
     organoColegiado: fields.organoColegiado,
     tipoSesion: fields.tipoSesion,
     personaContralora: fields.personaContralora,
+    personaContraloraSuplente: fields.personaContraloraSuplente,
+    firma: fields.firma,
+    ccep: fields.ccep,
   };
   for (const field of OPTION_FIELDS) {
     const value = (map[field] ?? "").trim();
@@ -61,7 +80,6 @@ async function learnOptions(fields: RecordFields) {
 }
 
 export const records = {
-  // Todos los registros de un año, ordenados. La UI los agrupa por mes.
   listByYear: base
     .input(z.object({ anio: z.number() }))
     .handler(({ input }) =>
@@ -95,22 +113,24 @@ export const records = {
   create: base
     .input(recordFields)
     .handler(async ({ input }) => {
-      const { mes, anio } = deriveMonthYear(input.fechaRecepcionOficialia);
+      const fields = sanitizeConditionalFields(input);
+      const { mes, anio } = deriveMonthYear(fields.fechaRecepcionOficialia);
       const [{ maxc }] = await db
         .select({ maxc: sql<number>`coalesce(max(${schema.records.consecutivo}), 0)` })
         .from(schema.records);
       const [row] = await db
         .insert(schema.records)
-        .values({ ...input, mes, anio, consecutivo: (maxc ?? 0) + 1 })
+        .values({ ...fields, mes, anio, consecutivo: (maxc ?? 0) + 1 })
         .returning();
-      await learnOptions(input);
+      await learnOptions(fields);
       return row;
     }),
 
   update: base
     .input(recordFields.extend({ id: z.number() }))
     .handler(async ({ input }) => {
-      const { id, ...fields } = input;
+      const { id, ...rawFields } = input;
+      const fields = sanitizeConditionalFields(rawFields);
       const { mes, anio } = deriveMonthYear(fields.fechaRecepcionOficialia);
       const [row] = await db
         .update(schema.records)

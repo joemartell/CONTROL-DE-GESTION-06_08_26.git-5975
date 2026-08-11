@@ -1,7 +1,7 @@
 import { Layout } from "../components/layout";
-import { FileText, FolderTree, Printer, Tags } from "lucide-react";
+import { FileText, FolderTree, Printer, Tags, Type } from "lucide-react";
 
-const TAGS: [string, string][] = [
+const BASE_TAGS: [string, string][] = [
   ["{consecutivo}", "Número consecutivo automático"],
   ["{mes}", "Mes en texto (Enero…Diciembre)"],
   ["{anio}", "Año"],
@@ -25,12 +25,36 @@ const TAGS: [string, string][] = [
   ["{consecutivo_folio}", "Consecutivo folio SCG/DCC/CE/----/2026"],
   ["{firma}", "Firma (iniciales: LMD, MDCT, MAPG, SYOM, ACP)"],
   ["{persona_contralora}", "Persona contralora ciudadana convocada"],
+  ["{persona_contralora_suplente}", "Persona contralora ciudadana suplente"],
+  ["{ccep}", "C.C.E.P. (solo para asunto Extemporáneo)"],
   ["{fecha_impresion}", "Fecha en que se imprime el documento"],
 ];
 
+const FORMATTABLE_TAGS: [string, string][] = [
+  ["signado_por", "Signado por"],
+  ["cargo_puesto", "Cargo / Puesto"],
+  ["asunto", "Asunto"],
+  ["ente", "Ente"],
+  ["organo_colegiado", "Órgano Colegiado"],
+  ["tipo_sesion", "Tipo de sesión"],
+  ["datos_sesion", "Datos de la sesión"],
+  ["sesion_virtual_detalle", "Alias de datos de la sesión"],
+  ["persona_contralora", "Persona contralora ciudadana convocada"],
+  ["persona_contralora_suplente", "Persona contralora ciudadana suplente"],
+  ["ccep", "C.C.E.P."],
+];
+
+const FORMAT_TAGS = FORMATTABLE_TAGS.flatMap<[string, string]>(([tag, desc]) => [
+  [`{${tag}_mayusculas}`, `${desc} · MAYÚSCULAS`],
+  [`{${tag}_minusculas}`, `${desc} · minúsculas`],
+  [`{${tag}_intercalado}`, `${desc} · Intercalado / tipo título`],
+]);
+
+const TAGS: [string, string][] = [...BASE_TAGS, ...FORMAT_TAGS];
+
 const RULES: [string, string][] = [
   ["ASUNTO = «Convocatoria»", "Plantilla de Convocatoria"],
-  ["ASUNTO = «Extemporáneo»", "Plantilla de Extemporáneo"],
+  ["ASUNTO = «Extemporáneo»", "Plantilla de Extemporáneo + habilita el apartado C.C.E.P. después de Folio"],
   ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = Sí", "Plantilla específica 1"],
   ["Carpeta de trabajo = Sí  ·  Sesión virtual/presencial = No", "Plantilla específica 2"],
   ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = No", "Plantilla específica 3"],
@@ -61,23 +85,18 @@ export default function Ayuda() {
             Cada registro tiene el botón <b>Imprimir</b>. La app decide qué plantilla usar según estas reglas y descarga un nuevo <b>.docx</b> con los datos del registro:
           </p>
           <ol className="mb-3 list-decimal space-y-1 rounded-lg border border-accent/40 bg-accent/10 p-4 pl-8">
-            <li>
-              Busca una plantilla de la <b>misma regla y la misma FIRMA</b> del registro.
-            </li>
-            <li>
-              Si esa firma no tiene plantilla propia, usa la <b>plantilla general</b> de la regla
-              (la que se subió con «Todas las firmas»).
-            </li>
+            <li>Busca una plantilla de la <b>misma regla y la misma FIRMA</b> del registro.</li>
+            <li>Si esa firma no tiene plantilla propia, usa la <b>plantilla general</b> de la regla.</li>
             <li>Si no existe ninguna de las dos, la app <b>pregunta</b> cuál usar.</li>
           </ol>
           <p className="mb-2">
-            Es decir: puedes tener una plantilla distinta por cada firma (LMD, MDCT, MAPG, SYOM, ACP)
+            Puedes tener una plantilla distinta por cada firma (LMD, MDCT, MAPG, SYOM, ACP)
             dentro de la misma regla. Se configuran en <b>Plantillas → Por firma</b>.
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-secondary text-left text-wine-900">
-                <tr><th className="px-3 py-2">Condición</th><th className="px-3 py-2">Plantilla</th></tr>
+                <tr><th className="px-3 py-2">Condición</th><th className="px-3 py-2">Plantilla / comportamiento</th></tr>
               </thead>
               <tbody>
                 {RULES.map(([c, p], i) => (
@@ -96,15 +115,62 @@ export default function Ayuda() {
             <li>Abre Microsoft Word (o LibreOffice) y crea tu documento con el formato oficial que necesites.</li>
             <li>
               Donde quieras que aparezca un dato, escribe la etiqueta correspondiente entre llaves, por ejemplo{" "}
-              <code className="rounded bg-secondary px-1">{"{asunto}"}</code> o{" "}
-              <code className="rounded bg-secondary px-1">{"{consecutivo_folio}"}</code>.
+              <code className="rounded bg-secondary px-1">{"{asunto}"}</code>,{" "}
+              <code className="rounded bg-secondary px-1">{"{persona_contralora_suplente}"}</code> o{" "}
+              <code className="rounded bg-secondary px-1">{"{ccep}"}</code>.
             </li>
+            <li>Para controlar mayúsculas/minúsculas, usa una de las variantes explicadas abajo.</li>
             <li>Guarda el archivo en formato <b>.docx</b>.</li>
             <li>Entra a la pestaña <b>Plantillas</b>, pulsa <b>Subir plantilla</b>, elige el archivo y asígnalo a la regla que corresponda.</li>
-            <li>Listo: al imprimir un registro, la app reemplaza cada etiqueta por su valor real.</li>
+            <li>Al imprimir un registro, la app reemplaza cada etiqueta por su valor real.</li>
           </ol>
           <p className="mt-3 rounded-md bg-accent/10 p-3 text-[13px] text-wine-900">
-            Consejo: escribe la etiqueta de un solo tirón (sin autocorrección que parta las llaves) para que Word no la divida internamente.
+            Consejo: escribe la etiqueta de un solo tirón para que Word no la divida internamente.
+          </p>
+        </Card>
+
+        <Card icon={Type} title="Formatos de mayúsculas y minúsculas">
+          <p className="mb-3">
+            Los campos de texto principales pueden imprimirse en su valor original o con tres variantes. Solo cambia la etiqueta en Word; el valor guardado en la base de datos no se modifica.
+          </p>
+          <div className="mb-4 overflow-hidden rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary text-left text-wine-900">
+                <tr>
+                  <th className="px-3 py-2">Formato</th>
+                  <th className="px-3 py-2">Ejemplo para Signado por</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2"><code>{"{signado_por_mayusculas}"}</code></td>
+                  <td className="px-3 py-2">M.D. ERIKA ALEJANDRA BARBA LUNA</td>
+                </tr>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2"><code>{"{signado_por_minusculas}"}</code></td>
+                  <td className="px-3 py-2">m.d. erika alejandra barba luna</td>
+                </tr>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2"><code>{"{signado_por_intercalado}"}</code></td>
+                  <td className="px-3 py-2">M.D. Erika Alejandra Barba Luna</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            La variante <b>intercalado</b> usa estilo título en español: mantiene partículas como «de», «del», «la», «las», «los», «y», «en», «por» y «para» en minúscula y conserva acrónimos institucionales frecuentes.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Ejemplo: <b>SECRETARÍA DE GESTIÓN INTEGRAL DE RIESGOS Y PROTECCIÓN CIVIL DE LA CIUDAD DE MÉXICO</b> se convierte en <b>Secretaría de Gestión Integral de Riesgos y Protección Civil de la Ciudad de México</b>.
+          </p>
+        </Card>
+
+        <Card icon={Tags} title="Opciones guardadas en listas desplegables">
+          <p className="mb-2">
+            Los cuadros de texto con lista muestran una <b>X</b> al final de cada opción guardada. Al pulsarla, la opción desaparece del catálogo para capturas futuras.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Borrar una opción del catálogo no borra ni modifica registros históricos que ya tengan ese valor. Las siglas base de Firma (LMD, MDCT, MAPG, SYOM y ACP) son opciones protegidas del sistema.
           </p>
         </Card>
 
@@ -124,9 +190,9 @@ export default function Ayuda() {
           <pre className="overflow-x-auto rounded-lg bg-wine-900 p-4 text-xs leading-relaxed text-[#f3e6d8]">{`registros-scg/
 └─ datos/
    ├─ base-de-datos/
-   │   └─ registros.db      ← base de datos (todos los registros)
-   ├─ plantillas/           ← tus archivos .docx cargados
-   └─ impresiones/          ← (opcional) documentos generados`}</pre>
+   │   └─ registros.db
+   ├─ plantillas/
+   └─ impresiones/`}</pre>
           <p className="mt-3">
             Para respaldar tu información, copia la carpeta <b>datos/</b> completa. Para restaurar, reemplázala.
           </p>

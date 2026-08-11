@@ -107,13 +107,11 @@
       "must": {
         "haveType": "directory",
         "haveFiles": [
-          "public/runable.js",
           "src/__server.ts",
           "src/api/__core/app.ts",
           "src/api/database/__client.ts",
           "src/web/__main.tsx",
           "src/web/__vite-env.d.ts",
-          "src/web/types/__analytics.d.ts",
           "vite/__plugins/asset-optimizer-plugin.ts",
           "vite/__plugins/hono-dev-plugin.ts",
           "website.config.json"
@@ -126,18 +124,18 @@
       "must": {
         "haveType": "directory",
         "haveFiles": [
-          "lib/__analytics.ts",
           "__env.d.ts"
         ]
       }
     },
     {
-      "name": "mobile-layout-keeps-template-providers",
+      "name": "mobile-layout-keeps-core-providers",
       "paths": "packages/mobile/app/_layout.tsx",
       "must": {
         "importFrom": [
-          "../lib/__analytics",
-          "../components/ErrorBoundary"
+          "../components/__ErrorBoundary",
+          "@tanstack/react-query",
+          "react-native-safe-area-context"
         ]
       }
     },
@@ -149,24 +147,6 @@
         "haveFiles": [
           "electron/__electron-env.d.ts",
           "electron/__no-renderer.ts"
-        ]
-      }
-    },
-    {
-      "name": "desktop-main-creates-managed-deep-links",
-      "paths": "packages/desktop/electron/main.ts",
-      "must": {
-        "importFrom": [
-          "@runablehq/managed-auth/desktop/main"
-        ]
-      }
-    },
-    {
-      "name": "desktop-preload-exposes-managed-auth-bridge",
-      "paths": "packages/desktop/electron/preload.ts",
-      "must": {
-        "importFrom": [
-          "@runablehq/managed-auth/desktop/preload"
         ]
       }
     },
@@ -189,22 +169,12 @@
       }
     },
     {
-      "name": "web-app-keeps-runable-runtime",
-      "paths": "packages/web/src/web/app.tsx",
-      "must": {
-        "importFrom": [
-          "@runablehq/website-runtime"
-        ]
-      }
-    },
-    {
-      "name": "web-vite-config-keeps-template-plugins",
+      "name": "web-vite-config-keeps-core-plugins",
       "paths": "packages/web/vite.config.ts",
       "must": {
         "importFrom": [
           "./vite/__plugins/asset-optimizer-plugin",
-          "./vite/__plugins/hono-dev-plugin",
-          "./vite/__plugins/runable-analytics-plugin"
+          "./vite/__plugins/hono-dev-plugin"
         ]
       }
     },

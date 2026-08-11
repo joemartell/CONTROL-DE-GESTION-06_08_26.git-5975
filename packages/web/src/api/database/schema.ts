@@ -35,6 +35,8 @@ export const records = sqliteTable("records", {
   consecutivoFolio: text("consecutivo_folio"),
   firma: text("firma"), // LMD | MDCT | MAPG | SYOM | ACP (creable)
   personaContralora: text("persona_contralora"),
+  personaContraloraSuplente: text("persona_contralora_suplente"),
+  ccep: text("ccep"),
 
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -47,7 +49,7 @@ export const records = sqliteTable("records", {
 // Opciones creables para los comboboxes ("escribe o selecciona")
 export const options = sqliteTable("options", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  field: text("field").notNull(), // asunto | ente | signadoPor | cargoPuesto | organoColegiado | tipoSesion | personaContralora
+  field: text("field").notNull(),
   value: text("value").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
