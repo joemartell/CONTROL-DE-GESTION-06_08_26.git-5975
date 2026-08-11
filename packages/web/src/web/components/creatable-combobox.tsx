@@ -16,7 +16,7 @@ export function CreatableCombobox({
   onChange: (v: string) => void;
   suggestions: string[];
   placeholder?: string;
-  onDeleteSuggestion?: (value: string) => void | Promise<void>;
+  onDeleteSuggestion?: (value: string) => unknown | Promise<unknown>;
   nonDeletableSuggestions?: string[];
 }) {
   const [open, setOpen] = React.useState(false);
