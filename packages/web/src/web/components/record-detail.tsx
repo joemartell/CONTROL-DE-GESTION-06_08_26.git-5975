@@ -60,6 +60,8 @@ export function RecordDetail({
         <Row label="Fecha y hora de sesión" value={fmtDateTime(record.fechaHoraSesion)} />
         <Row label="Número de la sesión" value={record.numeroSesion} />
         <Row label="Tipo de sesión" value={record.tipoSesion} />
+        <Row label="Persona contralora ciudadana convocada" value={record.personaContralora} />
+        <Row label="Persona contralora ciudadana suplente" value={record.personaContraloraSuplente} />
         <Row label="Carpeta de trabajo" value={record.carpetaTrabajo} />
         <Row label="Sesión virtual/presencial" value={record.sesionVirtualPresencial} />
         {record.sesionVirtualPresencial === "Sí" && (
@@ -67,7 +69,6 @@ export function RecordDetail({
         )}
         <Row label="Consecutivo folio" value={record.consecutivoFolio} />
         <Row label="Firma" value={record.firma} />
-        <Row label="Persona contralora" value={record.personaContralora} />
       </dl>
     </Modal>
   );
