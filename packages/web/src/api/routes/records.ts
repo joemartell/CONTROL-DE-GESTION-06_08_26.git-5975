@@ -26,6 +26,7 @@ const recordFields = z.object({
   consecutivoFolio: z.string().nullable().optional(),
   firma: z.string().nullable().optional(),
   personaContralora: z.string().nullable().optional(),
+  personaContraloraSuplente: z.string().nullable().optional(),
 });
 
 type RecordFields = z.infer<typeof recordFields>;
@@ -36,7 +37,6 @@ function deriveMonthYear(fecha: string | null | undefined) {
   return { mes: valid.getMonth() + 1, anio: valid.getFullYear() };
 }
 
-// Guarda automáticamente valores nuevos de los comboboxes creables.
 async function learnOptions(fields: RecordFields) {
   const map: Partial<Record<OptionField, string | null | undefined>> = {
     asunto: fields.asunto,
@@ -46,6 +46,7 @@ async function learnOptions(fields: RecordFields) {
     organoColegiado: fields.organoColegiado,
     tipoSesion: fields.tipoSesion,
     personaContralora: fields.personaContralora,
+    personaContraloraSuplente: fields.personaContraloraSuplente,
   };
   for (const field of OPTION_FIELDS) {
     const value = (map[field] ?? "").trim();
@@ -61,7 +62,6 @@ async function learnOptions(fields: RecordFields) {
 }
 
 export const records = {
-  // Todos los registros de un año, ordenados. La UI los agrupa por mes.
   listByYear: base
     .input(z.object({ anio: z.number() }))
     .handler(({ input }) =>
