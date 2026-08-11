@@ -25,6 +25,7 @@ const BASE_TAGS: [string, string][] = [
   ["{consecutivo_folio}", "Consecutivo folio SCG/DCC/CE/----/2026"],
   ["{firma}", "Firma (iniciales: LMD, MDCT, MAPG, SYOM, ACP)"],
   ["{persona_contralora}", "Persona contralora ciudadana convocada"],
+  ["{persona_contralora_suplente}", "Persona contralora ciudadana suplente"],
   ["{fecha_impresion}", "Fecha en que se imprime el documento"],
 ];
 
@@ -37,7 +38,8 @@ const FORMATTABLE_TAGS: [string, string][] = [
   ["tipo_sesion", "Tipo de sesión"],
   ["datos_sesion", "Datos de la sesión"],
   ["sesion_virtual_detalle", "Alias de datos de la sesión"],
-  ["persona_contralora", "Persona contralora ciudadana"],
+  ["persona_contralora", "Persona contralora ciudadana convocada"],
+  ["persona_contralora_suplente", "Persona contralora ciudadana suplente"],
 ];
 
 const FORMAT_TAGS = FORMATTABLE_TAGS.flatMap<[string, string]>(([tag, desc]) => [
@@ -81,17 +83,12 @@ export default function Ayuda() {
             Cada registro tiene el botón <b>Imprimir</b>. La app decide qué plantilla usar según estas reglas y descarga un nuevo <b>.docx</b> con los datos del registro:
           </p>
           <ol className="mb-3 list-decimal space-y-1 rounded-lg border border-accent/40 bg-accent/10 p-4 pl-8">
-            <li>
-              Busca una plantilla de la <b>misma regla y la misma FIRMA</b> del registro.
-            </li>
-            <li>
-              Si esa firma no tiene plantilla propia, usa la <b>plantilla general</b> de la regla
-              (la que se subió con «Todas las firmas»).
-            </li>
+            <li>Busca una plantilla de la <b>misma regla y la misma FIRMA</b> del registro.</li>
+            <li>Si esa firma no tiene plantilla propia, usa la <b>plantilla general</b> de la regla.</li>
             <li>Si no existe ninguna de las dos, la app <b>pregunta</b> cuál usar.</li>
           </ol>
           <p className="mb-2">
-            Es decir: puedes tener una plantilla distinta por cada firma (LMD, MDCT, MAPG, SYOM, ACP)
+            Puedes tener una plantilla distinta por cada firma (LMD, MDCT, MAPG, SYOM, ACP)
             dentro de la misma regla. Se configuran en <b>Plantillas → Por firma</b>.
           </p>
           <div className="overflow-hidden rounded-lg border border-border">
@@ -117,15 +114,15 @@ export default function Ayuda() {
             <li>
               Donde quieras que aparezca un dato, escribe la etiqueta correspondiente entre llaves, por ejemplo{" "}
               <code className="rounded bg-secondary px-1">{"{asunto}"}</code> o{" "}
-              <code className="rounded bg-secondary px-1">{"{consecutivo_folio}"}</code>.
+              <code className="rounded bg-secondary px-1">{"{persona_contralora_suplente}"}</code>.
             </li>
             <li>Para controlar mayúsculas/minúsculas, usa una de las variantes explicadas abajo.</li>
             <li>Guarda el archivo en formato <b>.docx</b>.</li>
             <li>Entra a la pestaña <b>Plantillas</b>, pulsa <b>Subir plantilla</b>, elige el archivo y asígnalo a la regla que corresponda.</li>
-            <li>Listo: al imprimir un registro, la app reemplaza cada etiqueta por su valor real.</li>
+            <li>Al imprimir un registro, la app reemplaza cada etiqueta por su valor real.</li>
           </ol>
           <p className="mt-3 rounded-md bg-accent/10 p-3 text-[13px] text-wine-900">
-            Consejo: escribe la etiqueta de un solo tirón (sin autocorrección que parta las llaves) para que Word no la divida internamente.
+            Consejo: escribe la etiqueta de un solo tirón para que Word no la divida internamente.
           </p>
         </Card>
 
@@ -181,9 +178,9 @@ export default function Ayuda() {
           <pre className="overflow-x-auto rounded-lg bg-wine-900 p-4 text-xs leading-relaxed text-[#f3e6d8]">{`registros-scg/
 └─ datos/
    ├─ base-de-datos/
-   │   └─ registros.db      ← base de datos (todos los registros)
-   ├─ plantillas/           ← tus archivos .docx cargados
-   └─ impresiones/          ← (opcional) documentos generados`}</pre>
+   │   └─ registros.db
+   ├─ plantillas/
+   └─ impresiones/`}</pre>
           <p className="mt-3">
             Para respaldar tu información, copia la carpeta <b>datos/</b> completa. Para restaurar, reemplázala.
           </p>
