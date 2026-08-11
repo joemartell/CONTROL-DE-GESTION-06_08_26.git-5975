@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { base } from "../__core/app";
 import { db } from "../database";
 import * as schema from "../database/schema";
@@ -76,6 +76,28 @@ async function learnOptions(fields: RecordFields) {
     if (existing.length === 0) {
       await db.insert(schema.options).values({ field, value });
     }
+  }
+}
+
+// Mantiene los consecutivos globales sin huecos después de eliminar registros.
+// Conserva el orden existente por consecutivo; id desempata cualquier duplicado previo.
+async function resequenceConsecutivos() {
+  const remaining = await db
+    .select({
+      id: schema.records.id,
+      consecutivo: schema.records.consecutivo,
+    })
+    .from(schema.records)
+    .orderBy(asc(schema.records.consecutivo), asc(schema.records.id));
+
+  for (const [index, row] of remaining.entries()) {
+    const consecutivo = index + 1;
+    if (row.consecutivo === consecutivo) continue;
+
+    await db
+      .update(schema.records)
+      .set({ consecutivo })
+      .where(eq(schema.records.id, row.id));
   }
 }
 
@@ -174,6 +196,7 @@ export const records = {
     .input(z.object({ id: z.number() }))
     .handler(async ({ input }) => {
       await db.delete(schema.records).where(eq(schema.records.id, input.id));
+      await resequenceConsecutivos();
       return { ok: true };
     }),
 };
