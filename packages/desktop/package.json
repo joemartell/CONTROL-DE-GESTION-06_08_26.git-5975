@@ -10,9 +10,7 @@
     "dist": "vite build && electron-builder",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@runablehq/managed-auth": "^0.6.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^24",
     "electron": "^30.0.1",
