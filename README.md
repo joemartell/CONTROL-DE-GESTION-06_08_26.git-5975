@@ -1,95 +1,93 @@
-# sandbox-app-template
+# CONTROL DE GESTIÓN
 
-Monorepo: Bun workspaces + Turborepo.
+Monorepo con Bun workspaces + Turborepo para la aplicación de Control de Gestión.
 
 ## Commands
 
-The root `package.json` scripts are the external contract — deployment and tooling only ever
-call these named verbs. Never rename or remove them; their internals are free to change.
-
 | Command | Purpose |
 | --- | --- |
-| `bun run dev` / `dev:desktop` / `dev:mobile` | Start dev server per platform |
-| `bun run build` | Build all packages |
-| `bun run start` | Start (or restart) the production server under pm2 (idempotent) |
-| `bun run stop` | Stop the production server |
-| `bun run lint` | Releases + conventions + oxlint |
-| `bun run typecheck` | Typecheck all packages |
-| `bun run db:generate` / `db:migrate` / `db:push` | Database workflows |
+| `bun run dev` / `dev:desktop` / `dev:mobile` | Inicia el entorno de desarrollo por plataforma |
+| `bun run build` | Compila todos los paquetes |
+| `bun run build:web` | Compila la aplicación web |
+| `bun run start` | Inicia o reinicia el servidor de producción con pm2 |
+| `bun run stop` | Detiene el servidor |
+| `bun run lint` | Ejecuta convenciones y lint |
+| `bun run typecheck` | Verifica tipos en todos los paquetes |
+| `bun run db:generate` / `db:migrate` / `db:push` | Flujos de base de datos |
 
-Fixed conventions the contract relies on: server listens on `$PORT` (default `4200`), health
-endpoint at `/api/health`, secrets in the root `.env`, pm2 app name `web-app`.
-
-Scripts prefixed `internal:` are template maintenance helpers, not part of the contract.
+El servidor usa `$PORT` (por defecto `4200`), el endpoint de salud es `/api/health` y los secretos viven en el archivo `.env` de la raíz.
 
 ## Project Structure
 
-```
-.env                         Secrets (gitignored), loaded via Vite's loadEnv
+```text
+.env                         Variables y secretos locales
 packages/
-  web/                       Unified server (API + web frontend via Vite)
-    vite.config.ts           Vite 7 config — loads .env, sets port, registers plugins
-    index.html               Frontend HTML entry
+  web/                       API + frontend web
+    vite.config.ts           Configuración de Vite
+    index.html               Entrada HTML
     vite/__plugins/
-      hono-dev-plugin.ts     Intercepts /api/* in dev, forwards to Hono via SSR
-      runable-analytics-plugin.ts
+      hono-dev-plugin.ts     Integra /api/* durante desarrollo
+      asset-optimizer-plugin.ts
     src/
       api/
         __core/
-          app.ts             oRPC base + createApp() Hono mount (/api/rpc/*, /api/health) — core, do not edit
-        routes/              Feature routers, one file per feature (max 500 lines each)
-        index.ts             Composes feature routers + AppRouter export
+          app.ts             Base oRPC + montaje Hono
+        routes/              Rutas por funcionalidad
+        index.ts             Composición del router
         database/
-          __client.ts        Database client (Turso/LibSQL) — template-managed
-          index.ts           Re-exports db from __client
-          schema.ts          Drizzle schema
-      web/
-        __main.tsx           Bootstrap (mount + Router) — template-managed
-        main.tsx             Entry (composition only)
-        app.tsx              Root component + Wouter routing
-        pages/               Page components
-        queries/             Query/mutation options (one file per feature)
-        components/          UI components
-        hooks/
-          use-desktop.ts     Desktop detection
+          __client.ts        Cliente de base de datos
+          index.ts           Reexporta db
+          schema.ts          Esquema Drizzle
         lib/
-          api.ts             Typed API client (oRPC + TanStack Query utils)
-          desktop.ts         Electron API types
-          utils.ts           Shared utilities
-        styles.css           Tailwind CSS entry
-  mobile/                    Expo + React Native + expo-router (thin client, no server/db)
-    app/                     File-based routing
-      (tabs)/                Default themed tab navigator + screens
-    constants/theme.ts       Color tokens (light/dark) + Fonts — recolor to brand
-    hooks/                   use-colors, use-color-scheme (+ .web)
-    queries/                 Data hooks (useX), one file per feature
+          records.ts         Reglas de registros y datos para plantillas DOCX
+          docx.ts            Render de plantillas DOCX
+      web/
+        __main.tsx           Bootstrap React
+        main.tsx             Entrada web
+        app.tsx              Rutas de la aplicación
+        pages/               Páginas
+        queries/             Consultas y mutaciones
+        components/          Componentes de interfaz
+        hooks/               Hooks
+        lib/
+          api.ts             Cliente API tipado
+          desktop.ts         Tipos de la API Electron
+          utils.ts           Utilidades
+        styles.css           Estilos
+  mobile/                    Aplicación Expo / React Native
+    app/                     Navegación basada en archivos
+    constants/               Tema
+    hooks/                   Hooks móviles
+    queries/                 Consultas de datos
     lib/
-      api.ts                 Typed API client (oRPC → @template/web)
-  desktop/                   Electron shell (loads web app from server)
+      api.ts                 Cliente API móvil
+  desktop/                   Contenedor Electron
     electron/
-      main.ts                Editable main process (window, lifecycle) + managed deep-link attach
-      ipc.ts                 Starter IPC handlers (dialog/fs/notification/window) — editable
-      preload.ts             contextBridge API + managed-auth bridge
-    vite.config.ts           Vite config
+      main.ts                Proceso principal y ciclo de vida
+      ipc.ts                 IPC para diálogos, archivos, shell, notificaciones y ventana
+      preload.ts             API expuesta mediante contextBridge
+    vite.config.ts           Configuración de Vite para Electron
+
+datos/
+  base-de-datos/             Base SQLite local
+  plantillas/                Plantillas DOCX cargadas
 ```
 
 ## Environment Variables
 
-Secrets and credentials live in `.env` at the project root (gitignored). Vite's `loadEnv` loads them into `process.env` at dev/build time (configured in `packages/web/vite.config.ts`). In API code (Hono), use `process.env.YOUR_VAR`. In browser code, only `VITE_`-prefixed vars are exposed via `import.meta.env.VITE_YOUR_VAR`. Drizzle scripts use `bun --env-file=../../.env` to load env vars directly.
+Los secretos y credenciales se guardan en `.env` en la raíz. Vite carga ese archivo desde `packages/web/vite.config.ts`. En el código del API se accede mediante `process.env`. En navegador solo deben exponerse variables con prefijo `VITE_`.
 
 ## Desktop UI
 
-The desktop app has no separate renderer by default. It loads the web app from `packages/web`; desktop-specific UI should live in `packages/web/src/web/` and be gated with `useDesktop()` / `window.electronAPI`. Keep `packages/desktop` for Electron window setup, menus/tray/shortcuts, IPC handlers, native OS APIs, and packaging. Only add a separate desktop renderer when the product intentionally needs a different desktop-only UI architecture.
-
-## Servers
-
-Dev servers are started and managed automatically — no need to run them manually.
+La aplicación de escritorio carga la misma interfaz web desde `packages/web`. El paquete `packages/desktop` contiene la ventana Electron, IPC, APIs nativas y empaquetado.
 
 ## Database
 
 ```sh
 cd packages/web
-bun run db:push        # Push schema to database
-bun run db:generate    # Generate migration files
-bun run db:migrate     # Run migrations
+bun run db:push
+bun run db:generate
+bun run db:migrate
 ```
+
+Después de añadir o modificar columnas en `schema.ts`, ejecuta `bun run db:push` para sincronizar la base local.
