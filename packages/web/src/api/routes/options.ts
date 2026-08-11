@@ -50,4 +50,15 @@ export const options = {
       await db.delete(schema.options).where(eq(schema.options.id, input.id));
       return { ok: true };
     }),
+
+  // Borra solo la opción guardada del catálogo; no modifica registros históricos.
+  removeByValue: base
+    .input(z.object({ field: fieldEnum, value: z.string().min(1) }))
+    .handler(async ({ input }) => {
+      const value = input.value.trim();
+      await db
+        .delete(schema.options)
+        .where(and(eq(schema.options.field, input.field), eq(schema.options.value, value)));
+      return { ok: true };
+    }),
 };
