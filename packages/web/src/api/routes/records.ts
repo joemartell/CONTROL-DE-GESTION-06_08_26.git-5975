@@ -27,6 +27,7 @@ const recordFields = z.object({
   firma: z.string().nullable().optional(),
   personaContralora: z.string().nullable().optional(),
   personaContraloraSuplente: z.string().nullable().optional(),
+  ccep: z.string().nullable().optional(),
 });
 
 type RecordFields = z.infer<typeof recordFields>;
@@ -35,6 +36,21 @@ function deriveMonthYear(fecha: string | null | undefined) {
   const d = fecha ? new Date(fecha.length <= 10 ? fecha + "T00:00:00" : fecha) : new Date();
   const valid = isNaN(d.getTime()) ? new Date() : d;
   return { mes: valid.getMonth() + 1, anio: valid.getFullYear() };
+}
+
+function isExtemporaneo(asunto: string | null | undefined): boolean {
+  return (asunto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase() === "extemporaneo";
+}
+
+function sanitizeConditionalFields(fields: RecordFields): RecordFields {
+  return {
+    ...fields,
+    ccep: isExtemporaneo(fields.asunto) ? fields.ccep : "",
+  };
 }
 
 async function learnOptions(fields: RecordFields) {
@@ -47,6 +63,8 @@ async function learnOptions(fields: RecordFields) {
     tipoSesion: fields.tipoSesion,
     personaContralora: fields.personaContralora,
     personaContraloraSuplente: fields.personaContraloraSuplente,
+    firma: fields.firma,
+    ccep: fields.ccep,
   };
   for (const field of OPTION_FIELDS) {
     const value = (map[field] ?? "").trim();
@@ -95,22 +113,24 @@ export const records = {
   create: base
     .input(recordFields)
     .handler(async ({ input }) => {
-      const { mes, anio } = deriveMonthYear(input.fechaRecepcionOficialia);
+      const fields = sanitizeConditionalFields(input);
+      const { mes, anio } = deriveMonthYear(fields.fechaRecepcionOficialia);
       const [{ maxc }] = await db
         .select({ maxc: sql<number>`coalesce(max(${schema.records.consecutivo}), 0)` })
         .from(schema.records);
       const [row] = await db
         .insert(schema.records)
-        .values({ ...input, mes, anio, consecutivo: (maxc ?? 0) + 1 })
+        .values({ ...fields, mes, anio, consecutivo: (maxc ?? 0) + 1 })
         .returning();
-      await learnOptions(input);
+      await learnOptions(fields);
       return row;
     }),
 
   update: base
     .input(recordFields.extend({ id: z.number() }))
     .handler(async ({ input }) => {
-      const { id, ...fields } = input;
+      const { id, ...rawFields } = input;
+      const fields = sanitizeConditionalFields(rawFields);
       const { mes, anio } = deriveMonthYear(fields.fechaRecepcionOficialia);
       const [row] = await db
         .update(schema.records)
