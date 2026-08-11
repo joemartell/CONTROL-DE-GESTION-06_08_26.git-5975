@@ -30,8 +30,6 @@ const norm = (s: string | null | undefined) =>
 const isSi = (s: string | null | undefined) => norm(s) === "si";
 const isNo = (s: string | null | undefined) => norm(s) === "no";
 
-// Determina la plantilla por reglas. Devuelve null si ninguna regla aplica
-// (en ese caso la UI pregunta qué plantilla usar).
 export function resolveRuleKey(r: {
   asunto?: string | null;
   carpetaTrabajo?: string | null;
@@ -125,8 +123,6 @@ const TITLE_CASE_LOWER_WORDS = new Set([
   "la", "las", "los", "o", "para", "por", "sin", "u", "y",
 ]);
 
-// Acrónimos institucionales frecuentes que deben conservarse en mayúsculas
-// cuando se usa la variante "intercalado".
 const TITLE_CASE_ACRONYMS = new Set([
   "CAAPS", "CARECI", "CDMX", "CE", "CURP", "DCC", "IR", "ISSSTE", "JUD",
   "LP", "RFC", "SAAPS", "SCG", "UAM", "UNAM",
@@ -148,9 +144,6 @@ function isAcronymToken(value: string): boolean {
   return pieces.length > 0 && pieces.every((piece) => TITLE_CASE_ACRONYMS.has(piece));
 }
 
-// Formato "intercalado" = estilo título en español:
-// "SECRETARÍA DE GESTIÓN INTEGRAL..." -> "Secretaría de Gestión Integral..."
-// Conserva partículas como "de", "la", "y" en minúscula y acrónimos conocidos.
 function toIntercalado(value: string | null | undefined): string {
   const text = (value ?? "").trim();
   if (!text) return "";
@@ -196,7 +189,6 @@ function caseVariants(prefix: string, value: string | null | undefined): Record<
   };
 }
 
-// Datos disponibles como {etiquetas} dentro de la plantilla .docx
 export function buildTemplateData(r: Record<string, unknown>) {
   const rec = r as {
     consecutivo: number; mes: number; anio: number;
@@ -208,6 +200,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     carpetaTrabajo: string | null; sesionVirtualPresencial: string | null;
     sesionVirtualDetalle: string | null; consecutivoFolio: string | null;
     firma: string | null; personaContralora: string | null;
+    personaContraloraSuplente: string | null;
   };
   return {
     consecutivo: String(rec.consecutivo ?? ""),
@@ -228,13 +221,12 @@ export function buildTemplateData(r: Record<string, unknown>) {
     ...caseVariants("tipo_sesion", rec.tipoSesion),
     carpeta_trabajo: rec.carpetaTrabajo ?? "",
     sesion_virtual_presencial: rec.sesionVirtualPresencial ?? "",
-    // Texto capturado en "Datos de la sesión:" cuando la sesión es Sí.
     ...caseVariants("datos_sesion", rec.sesionVirtualDetalle),
-    // Alias anterior, se conserva para plantillas ya existentes y también admite formatos.
     ...caseVariants("sesion_virtual_detalle", rec.sesionVirtualDetalle),
     consecutivo_folio: rec.consecutivoFolio ?? "",
     firma: rec.firma ?? "",
     ...caseVariants("persona_contralora", rec.personaContralora),
+    ...caseVariants("persona_contralora_suplente", rec.personaContraloraSuplente),
     fecha_impresion: new Date().toLocaleDateString("es-MX", {
       day: "2-digit", month: "long", year: "numeric",
     }),
@@ -243,27 +235,17 @@ export function buildTemplateData(r: Record<string, unknown>) {
 
 export const OPTION_FIELDS = [
   "asunto", "ente", "signadoPor", "cargoPuesto",
-  "organoColegiado", "tipoSesion", "personaContralora", "firma",
+  "organoColegiado", "tipoSesion", "personaContralora", "personaContraloraSuplente", "firma",
 ] as const;
 export type OptionField = (typeof OPTION_FIELDS)[number];
 
-// Siglas de FIRMA precargadas (el combobox sigue siendo creable: se pueden añadir más).
 export const FIRMA_DEFAULTS = ["LMD", "MDCT", "MAPG", "SYOM", "ACP"] as const;
 
-/**
- * Normaliza las siglas de FIRMA para comparar plantillas contra registros:
- * sin acentos, sin espacios y en MAYÚSCULAS. Devuelve null si viene vacío.
- */
 export function normalizaFirma(v: string | null | undefined): string | null {
   const s = norm(v).replace(/\s+/g, "").toUpperCase();
   return s || null;
 }
 
-/**
- * Elige la plantilla para un registro entre las disponibles.
- * Prioridad: 1) misma regla + misma firma  2) misma regla sin firma
- *            3) null => la UI pregunta cuál usar.
- */
 export function eligePlantilla<T extends { ruleKey: string | null; firma: string | null }>(
   plantillas: T[],
   ruleKey: RuleKey | null,
