@@ -5,7 +5,11 @@ import { Input, Textarea, Label } from "./ui/input";
 import { Button } from "./ui/button";
 import { CreatableCombobox, YesNoSegmented } from "./creatable-combobox";
 import { useCreateRecord, useUpdateRecord } from "../queries/records";
-import { useOptions } from "../queries/options";
+import {
+  useOptions,
+  useRemoveOptionByValue,
+  type OptionField,
+} from "../queries/options";
 
 type FormState = {
   fechaRecepcionOficialia: string;
@@ -28,7 +32,10 @@ type FormState = {
   firma: string;
   personaContralora: string;
   personaContraloraSuplente: string;
+  ccep: string;
 };
+
+const FIRMA_DEFAULTS = ["LMD", "MDCT", "MAPG", "SYOM", "ACP"];
 
 const empty: FormState = {
   fechaRecepcionOficialia: "",
@@ -51,7 +58,16 @@ const empty: FormState = {
   firma: "",
   personaContralora: "",
   personaContraloraSuplente: "",
+  ccep: "",
 };
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
 
 function fromRecord(r: Record<string, unknown> | null): FormState {
   if (!r) return { ...empty };
@@ -77,6 +93,7 @@ function fromRecord(r: Record<string, unknown> | null): FormState {
     firma: g("firma"),
     personaContralora: g("personaContralora"),
     personaContraloraSuplente: g("personaContraloraSuplente"),
+    ccep: g("ccep"),
   };
 }
 
@@ -102,6 +119,7 @@ export function RecordForm({
 }) {
   const [form, setForm] = React.useState<FormState>(empty);
   const options = useOptions();
+  const removeOption = useRemoveOptionByValue();
   const create = useCreateRecord();
   const update = useUpdateRecord();
   const isEdit = !!record?.id;
@@ -114,12 +132,17 @@ export function RecordForm({
     setForm((f) => ({ ...f, [k]: v }));
 
   const opt = (field: string) => (options.data?.[field] as string[] | undefined) ?? [];
+  const deleteSuggestion = (field: OptionField) => (value: string) =>
+    removeOption.mutateAsync({ field, value });
+
+  const isExtemporaneo = normalizeText(form.asunto) === "extemporaneo";
 
   const submit = async () => {
     const payload = {
       ...form,
       sesionVirtualDetalle:
         form.sesionVirtualPresencial === "Sí" ? form.sesionVirtualDetalle : "",
+      ccep: isExtemporaneo ? form.ccep : "",
     };
     if (isEdit) {
       await update.mutateAsync({ id: Number(record!.id), ...payload });
@@ -137,7 +160,7 @@ export function RecordForm({
       onClose={onClose}
       size="lg"
       title={isEdit ? `Editar registro #${record?.consecutivo}` : "Nuevo registro"}
-      subtitle="Los campos marcados con lista permiten escribir o seleccionar y guardan lo nuevo."
+      subtitle="Los campos con lista permiten escribir o seleccionar. La X elimina una opción guardada del catálogo, sin modificar registros anteriores."
       footer={
         <>
           <Button variant="outline" onClick={onClose} disabled={saving}>
@@ -206,6 +229,7 @@ export function RecordForm({
             value={form.signadoPor}
             onChange={(v) => set("signadoPor", v)}
             suggestions={opt("signadoPor")}
+            onDeleteSuggestion={deleteSuggestion("signadoPor")}
           />
         </div>
         <div>
@@ -214,6 +238,7 @@ export function RecordForm({
             value={form.cargoPuesto}
             onChange={(v) => set("cargoPuesto", v)}
             suggestions={opt("cargoPuesto")}
+            onDeleteSuggestion={deleteSuggestion("cargoPuesto")}
           />
         </div>
         <div>
@@ -222,6 +247,7 @@ export function RecordForm({
             value={form.asunto}
             onChange={(v) => set("asunto", v)}
             suggestions={opt("asunto")}
+            onDeleteSuggestion={deleteSuggestion("asunto")}
           />
         </div>
         <div>
@@ -230,6 +256,7 @@ export function RecordForm({
             value={form.ente}
             onChange={(v) => set("ente", v)}
             suggestions={opt("ente")}
+            onDeleteSuggestion={deleteSuggestion("ente")}
           />
         </div>
       </Section>
@@ -241,6 +268,7 @@ export function RecordForm({
             value={form.organoColegiado}
             onChange={(v) => set("organoColegiado", v)}
             suggestions={opt("organoColegiado")}
+            onDeleteSuggestion={deleteSuggestion("organoColegiado")}
           />
         </div>
         <div>
@@ -265,6 +293,7 @@ export function RecordForm({
             value={form.tipoSesion}
             onChange={(v) => set("tipoSesion", v)}
             suggestions={opt("tipoSesion")}
+            onDeleteSuggestion={deleteSuggestion("tipoSesion")}
           />
         </div>
         <div>
@@ -273,6 +302,7 @@ export function RecordForm({
             value={form.personaContralora}
             onChange={(v) => set("personaContralora", v)}
             suggestions={opt("personaContralora")}
+            onDeleteSuggestion={deleteSuggestion("personaContralora")}
           />
         </div>
         <div>
@@ -281,6 +311,7 @@ export function RecordForm({
             value={form.personaContraloraSuplente}
             onChange={(v) => set("personaContraloraSuplente", v)}
             suggestions={opt("personaContraloraSuplente")}
+            onDeleteSuggestion={deleteSuggestion("personaContraloraSuplente")}
           />
         </div>
         <div>
@@ -324,9 +355,26 @@ export function RecordForm({
             value={form.firma}
             onChange={(v) => set("firma", v)}
             suggestions={opt("firma")}
+            onDeleteSuggestion={deleteSuggestion("firma")}
+            nonDeletableSuggestions={FIRMA_DEFAULTS}
           />
         </div>
       </Section>
+
+      {isExtemporaneo && (
+        <Section title="C.C.E.P.">
+          <div className="md:col-span-2">
+            <Label>C.C.E.P.</Label>
+            <CreatableCombobox
+              value={form.ccep}
+              onChange={(v) => set("ccep", v)}
+              suggestions={opt("ccep")}
+              onDeleteSuggestion={deleteSuggestion("ccep")}
+              placeholder="Escribe o selecciona C.C.E.P.…"
+            />
+          </div>
+        </Section>
+      )}
     </Modal>
   );
 }
