@@ -27,6 +27,7 @@ type FormState = {
   consecutivoFolio: string;
   firma: string;
   personaContralora: string;
+  personaContraloraSuplente: string;
 };
 
 const empty: FormState = {
@@ -49,9 +50,9 @@ const empty: FormState = {
   consecutivoFolio: "",
   firma: "",
   personaContralora: "",
+  personaContraloraSuplente: "",
 };
 
-// deshace nulls de la BD
 function fromRecord(r: Record<string, unknown> | null): FormState {
   if (!r) return { ...empty };
   const g = (k: string) => (r[k] == null ? "" : String(r[k]));
@@ -75,6 +76,7 @@ function fromRecord(r: Record<string, unknown> | null): FormState {
     consecutivoFolio: g("consecutivoFolio"),
     firma: g("firma"),
     personaContralora: g("personaContralora"),
+    personaContraloraSuplente: g("personaContraloraSuplente"),
   };
 }
 
@@ -271,6 +273,14 @@ export function RecordForm({
             value={form.personaContralora}
             onChange={(v) => set("personaContralora", v)}
             suggestions={opt("personaContralora")}
+          />
+        </div>
+        <div>
+          <Label>Persona contralora ciudadana suplente</Label>
+          <CreatableCombobox
+            value={form.personaContraloraSuplente}
+            onChange={(v) => set("personaContraloraSuplente", v)}
+            suggestions={opt("personaContraloraSuplente")}
           />
         </div>
         <div>
