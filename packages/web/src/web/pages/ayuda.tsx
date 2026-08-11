@@ -26,6 +26,7 @@ const BASE_TAGS: [string, string][] = [
   ["{firma}", "Firma (iniciales: LMD, MDCT, MAPG, SYOM, ACP)"],
   ["{persona_contralora}", "Persona contralora ciudadana convocada"],
   ["{persona_contralora_suplente}", "Persona contralora ciudadana suplente"],
+  ["{ccep}", "C.C.E.P. (solo para asunto Extemporáneo)"],
   ["{fecha_impresion}", "Fecha en que se imprime el documento"],
 ];
 
@@ -40,6 +41,7 @@ const FORMATTABLE_TAGS: [string, string][] = [
   ["sesion_virtual_detalle", "Alias de datos de la sesión"],
   ["persona_contralora", "Persona contralora ciudadana convocada"],
   ["persona_contralora_suplente", "Persona contralora ciudadana suplente"],
+  ["ccep", "C.C.E.P."],
 ];
 
 const FORMAT_TAGS = FORMATTABLE_TAGS.flatMap<[string, string]>(([tag, desc]) => [
@@ -52,7 +54,7 @@ const TAGS: [string, string][] = [...BASE_TAGS, ...FORMAT_TAGS];
 
 const RULES: [string, string][] = [
   ["ASUNTO = «Convocatoria»", "Plantilla de Convocatoria"],
-  ["ASUNTO = «Extemporáneo»", "Plantilla de Extemporáneo"],
+  ["ASUNTO = «Extemporáneo»", "Plantilla de Extemporáneo + habilita el apartado C.C.E.P. después de Folio"],
   ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = Sí", "Plantilla específica 1"],
   ["Carpeta de trabajo = Sí  ·  Sesión virtual/presencial = No", "Plantilla específica 2"],
   ["Carpeta de trabajo = No  ·  Sesión virtual/presencial = No", "Plantilla específica 3"],
@@ -94,7 +96,7 @@ export default function Ayuda() {
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-secondary text-left text-wine-900">
-                <tr><th className="px-3 py-2">Condición</th><th className="px-3 py-2">Plantilla</th></tr>
+                <tr><th className="px-3 py-2">Condición</th><th className="px-3 py-2">Plantilla / comportamiento</th></tr>
               </thead>
               <tbody>
                 {RULES.map(([c, p], i) => (
@@ -113,8 +115,9 @@ export default function Ayuda() {
             <li>Abre Microsoft Word (o LibreOffice) y crea tu documento con el formato oficial que necesites.</li>
             <li>
               Donde quieras que aparezca un dato, escribe la etiqueta correspondiente entre llaves, por ejemplo{" "}
-              <code className="rounded bg-secondary px-1">{"{asunto}"}</code> o{" "}
-              <code className="rounded bg-secondary px-1">{"{persona_contralora_suplente}"}</code>.
+              <code className="rounded bg-secondary px-1">{"{asunto}"}</code>,{" "}
+              <code className="rounded bg-secondary px-1">{"{persona_contralora_suplente}"}</code> o{" "}
+              <code className="rounded bg-secondary px-1">{"{ccep}"}</code>.
             </li>
             <li>Para controlar mayúsculas/minúsculas, usa una de las variantes explicadas abajo.</li>
             <li>Guarda el archivo en formato <b>.docx</b>.</li>
@@ -159,6 +162,15 @@ export default function Ayuda() {
           </p>
           <p className="text-xs text-muted-foreground">
             Ejemplo: <b>SECRETARÍA DE GESTIÓN INTEGRAL DE RIESGOS Y PROTECCIÓN CIVIL DE LA CIUDAD DE MÉXICO</b> se convierte en <b>Secretaría de Gestión Integral de Riesgos y Protección Civil de la Ciudad de México</b>.
+          </p>
+        </Card>
+
+        <Card icon={Tags} title="Opciones guardadas en listas desplegables">
+          <p className="mb-2">
+            Los cuadros de texto con lista muestran una <b>X</b> al final de cada opción guardada. Al pulsarla, la opción desaparece del catálogo para capturas futuras.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Borrar una opción del catálogo no borra ni modifica registros históricos que ya tengan ese valor. Las siglas base de Firma (LMD, MDCT, MAPG, SYOM y ACP) son opciones protegidas del sistema.
           </p>
         </Card>
 
