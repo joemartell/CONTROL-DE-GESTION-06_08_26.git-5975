@@ -25,6 +25,7 @@ const IMPORT_COLUMNS = [
   ["Consecutivo folio", "consecutivoFolio", "SCG/DCC/CE/0123/2026", "Texto libre."],
   ["Firma", "firma", "LMD", "Ej. LMD, MDCT, MAPG, SYOM o ACP."],
   ["C.C.E.P.", "ccep", "Titular del Órgano Interno de Control", "Solo se conserva cuando Asunto = EXTEMPORÁNEO."],
+  ["Entrega de reporte de Actividades", "reporteActividadesEstado", "entregado", "Solo aplica a CONVOCATORIA. Usa entregado, no entregado o deja vacío. Si queda vacío, el sistema marca no entregado automáticamente al vencer 5 días hábiles desde la sesión."],
 ] as const;
 
 type ImportField = (typeof IMPORT_COLUMNS)[number][1];
@@ -36,6 +37,17 @@ function normalizeHeader(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]/g, "")
     .toLowerCase();
+}
+
+function normalizeReportStatus(value: string): string {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "entregado") return "entregado";
+  if (normalized === "no entregado" || normalized === "noentregado") return "no entregado";
+  return "";
 }
 
 const HEADER_MAP = new Map(
@@ -61,7 +73,6 @@ export function ExcelImportControls({
     const headers = IMPORT_COLUMNS.map(([header]) => header);
     const example = IMPORT_COLUMNS.map(([, , value]) => value);
 
-    // La primera hoja es la que importa la app: queda vacía para evitar cargar el ejemplo.
     const dataSheet = XLSX.utils.aoa_to_sheet([headers]);
     dataSheet["!cols"] = IMPORT_COLUMNS.map(([header, , exampleValue]) => ({
       wch: Math.min(42, Math.max(16, header.length + 2, exampleValue.length + 2)),
@@ -75,15 +86,10 @@ export function ExcelImportControls({
 
     const guideRows = [
       ["Campo", "Campo interno", "Ejemplo", "Indicaciones"],
-      ...IMPORT_COLUMNS.map(([header, field, exampleValue, help]) => [
-        header,
-        field,
-        exampleValue,
-        help,
-      ]),
+      ...IMPORT_COLUMNS.map(([header, field, exampleValue, help]) => [header, field, exampleValue, help]),
     ];
     const guideSheet = XLSX.utils.aoa_to_sheet(guideRows);
-    guideSheet["!cols"] = [{ wch: 32 }, { wch: 28 }, { wch: 42 }, { wch: 55 }];
+    guideSheet["!cols"] = [{ wch: 32 }, { wch: 28 }, { wch: 42 }, { wch: 70 }];
     XLSX.utils.book_append_sheet(workbook, guideSheet, "Guía de campos");
 
     XLSX.writeFile(workbook, "guia-importacion-control-gestion.xlsx", { compression: true });
@@ -99,10 +105,7 @@ export function ExcelImportControls({
     const sheet = workbook.Sheets[firstSheetName];
     if (!sheet) throw new Error("No fue posible leer la primera hoja del archivo.");
 
-    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-      defval: "",
-      raw: false,
-    });
+    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "", raw: false });
     if (rawRows.length === 0) throw new Error("El archivo no contiene registros para importar.");
 
     const normalizedKeys = Object.keys(rawRows[0] ?? {}).map(normalizeHeader);
@@ -115,7 +118,8 @@ export function ExcelImportControls({
       for (const [header, value] of Object.entries(raw)) {
         const field = HEADER_MAP.get(normalizeHeader(header));
         if (!field) continue;
-        mapped[field] = value == null ? "" : String(value).trim();
+        const text = value == null ? "" : String(value).trim();
+        mapped[field] = field === "reporteActividadesEstado" ? normalizeReportStatus(text) : text;
       }
       return mapped;
     });
@@ -144,22 +148,11 @@ export function ExcelImportControls({
         }}
       />
 
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={() => void downloadGuide()}
-        disabled={importing.isPending}
-        title="Descargar archivo Excel de ejemplo y guía de campos"
-      >
+      <Button variant="outline" size="lg" onClick={() => void downloadGuide()} disabled={importing.isPending} title="Descargar archivo Excel de ejemplo y guía de campos">
         <Download className="size-4" /> Guía Excel
       </Button>
 
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={() => inputRef.current?.click()}
-        disabled={importing.isPending}
-      >
+      <Button variant="outline" size="lg" onClick={() => inputRef.current?.click()} disabled={importing.isPending}>
         {importing.isPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
         Importar Excel
         <FileSpreadsheet className="size-4" />
