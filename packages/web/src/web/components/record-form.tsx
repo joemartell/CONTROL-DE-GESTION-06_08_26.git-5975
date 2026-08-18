@@ -16,6 +16,7 @@ type FormState = {
   fechaRecepcionOficialia: string;
   horaRecepcion: string;
   fechaHoraRecepcionDcc: string;
+  medioRecepcion: string;
   volanteOficialia: string;
   numeroOficioEnte: string;
   signadoPor: string;
@@ -43,6 +44,7 @@ const empty: FormState = {
   fechaRecepcionOficialia: "",
   horaRecepcion: "",
   fechaHoraRecepcionDcc: "",
+  medioRecepcion: "",
   volanteOficialia: "",
   numeroOficioEnte: "",
   signadoPor: "",
@@ -79,6 +81,7 @@ function fromRecord(r: Record<string, unknown> | null): FormState {
     fechaRecepcionOficialia: g("fechaRecepcionOficialia"),
     horaRecepcion: g("horaRecepcion"),
     fechaHoraRecepcionDcc: g("fechaHoraRecepcionDcc"),
+    medioRecepcion: g("medioRecepcion"),
     volanteOficialia: g("volanteOficialia"),
     numeroOficioEnte: g("numeroOficioEnte"),
     signadoPor: g("signadoPor"),
@@ -195,6 +198,29 @@ export function RecordForm({
         <div>
           <Label>Hora de recepción DCC <span className="normal-case">(fecha y hora)</span></Label>
           <Input type="datetime-local" value={form.fechaHoraRecepcionDcc} onChange={(e) => set("fechaHoraRecepcionDcc", e.target.value)} />
+        </div>
+        <div className="md:col-span-2">
+          <Label>Medio por el cual se recibió:</Label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {["Correo", "Oficialía", "Ambos"].map((medio) => {
+              const active = form.medioRecepcion === medio;
+              return (
+                <button
+                  key={medio}
+                  type="button"
+                  onClick={() => set("medioRecepcion", medio)}
+                  className={cn(
+                    "rounded-md border px-4 py-2 text-sm font-semibold transition-colors",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-white text-muted-foreground hover:bg-secondary",
+                  )}
+                >
+                  {medio}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div>
           <Label>Volante de Oficialía de Partes/Correo</Label>
