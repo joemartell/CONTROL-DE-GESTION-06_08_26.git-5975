@@ -38,6 +38,13 @@ function deriveMonthYear(fecha: string | null | undefined) {
   return { mes: valid.getMonth() + 1, anio: valid.getFullYear() };
 }
 
+function deriveMonthYearStrict(fecha: string | null | undefined) {
+  if (!fecha?.trim()) return null;
+  const d = new Date(fecha.length <= 10 ? fecha + "T00:00:00" : fecha);
+  if (isNaN(d.getTime())) return null;
+  return { mes: d.getMonth() + 1, anio: d.getFullYear() };
+}
+
 function isExtemporaneo(asunto: string | null | undefined): boolean {
   return (asunto ?? "")
     .normalize("NFD")
@@ -174,6 +181,60 @@ export const records = {
         .returning();
       await learnOptions(fields);
       return row;
+    }),
+
+  // Importación masiva desde Excel. Todas las filas se validan antes de insertar
+  // para evitar cargas parciales cuando existe una fecha inválida o de otro mes.
+  importExcel: base
+    .input(z.object({
+      anio: z.number(),
+      mes: z.number().min(1).max(12),
+      rows: z.array(recordFields).min(1).max(1000),
+    }))
+    .handler(async ({ input }) => {
+      const prepared = input.rows.map((rawFields, index) => {
+        const fields = sanitizeConditionalFields(rawFields);
+        const derived = deriveMonthYearStrict(fields.fechaRecepcionOficialia);
+
+        if (!derived) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: `Fila ${index + 2}: la Fecha de recepción oficialía es obligatoria o no tiene un formato válido.`,
+          });
+        }
+
+        if (derived.anio !== input.anio || derived.mes !== input.mes) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: `Fila ${index + 2}: la Fecha de recepción oficialía no corresponde al mes y año seleccionados.`,
+          });
+        }
+
+        return { fields, ...derived };
+      });
+
+      const [{ maxc }] = await db
+        .select({ maxc: sql<number>`coalesce(max(${schema.records.consecutivo}), 0)` })
+        .from(schema.records);
+
+      let nextConsecutivo = (maxc ?? 0) + 1;
+      const inserted = [];
+
+      for (const item of prepared) {
+        const [row] = await db
+          .insert(schema.records)
+          .values({
+            ...item.fields,
+            mes: item.mes,
+            anio: item.anio,
+            consecutivo: nextConsecutivo,
+          })
+          .returning();
+
+        if (row) inserted.push(row);
+        nextConsecutivo += 1;
+        await learnOptions(item.fields);
+      }
+
+      return { ok: true, imported: inserted.length };
     }),
 
   update: base
