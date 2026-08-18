@@ -10,6 +10,7 @@ import {
   useRemoveOptionByValue,
   type OptionField,
 } from "../queries/options";
+import { cn } from "@/lib/utils";
 
 type FormState = {
   fechaRecepcionOficialia: string;
@@ -33,6 +34,7 @@ type FormState = {
   personaContralora: string;
   personaContraloraSuplente: string;
   ccep: string;
+  reporteActividadesEstado: string;
 };
 
 const FIRMA_DEFAULTS = ["LMD", "MDCT", "MAPG", "SYOM", "ACP"];
@@ -59,6 +61,7 @@ const empty: FormState = {
   personaContralora: "",
   personaContraloraSuplente: "",
   ccep: "",
+  reporteActividadesEstado: "",
 };
 
 function normalizeText(value: string): string {
@@ -94,6 +97,7 @@ function fromRecord(r: Record<string, unknown> | null): FormState {
     personaContralora: g("personaContralora"),
     personaContraloraSuplente: g("personaContraloraSuplente"),
     ccep: g("ccep"),
+    reporteActividadesEstado: g("reporteActividadesEstado"),
   };
 }
 
@@ -136,6 +140,7 @@ export function RecordForm({
     removeOption.mutateAsync({ field, value });
 
   const isExtemporaneo = normalizeText(form.asunto) === "extemporaneo";
+  const isConvocatoria = normalizeText(form.asunto) === "convocatoria";
 
   const submit = async () => {
     const payload = {
@@ -143,6 +148,7 @@ export function RecordForm({
       sesionVirtualDetalle:
         form.sesionVirtualPresencial === "Sí" ? form.sesionVirtualDetalle : "",
       ccep: isExtemporaneo ? form.ccep : "",
+      reporteActividadesEstado: isConvocatoria ? form.reporteActividadesEstado : "",
     };
     if (isEdit) {
       await update.mutateAsync({ id: Number(record!.id), ...payload });
@@ -176,202 +182,100 @@ export function RecordForm({
       <Section title="Recepción">
         <div>
           <Label>Consecutivo</Label>
-          <Input
-            value={isEdit ? String(record?.consecutivo) : "Automático"}
-            disabled
-            className="bg-secondary font-semibold"
-          />
+          <Input value={isEdit ? String(record?.consecutivo) : "Automático"} disabled className="bg-secondary font-semibold" />
         </div>
         <div>
           <Label>Fecha de recepción oficialía</Label>
-          <Input
-            type="date"
-            value={form.fechaRecepcionOficialia}
-            onChange={(e) => set("fechaRecepcionOficialia", e.target.value)}
-          />
+          <Input type="date" value={form.fechaRecepcionOficialia} onChange={(e) => set("fechaRecepcionOficialia", e.target.value)} />
         </div>
         <div>
           <Label>Hora de recepción</Label>
-          <Input
-            type="time"
-            value={form.horaRecepcion}
-            onChange={(e) => set("horaRecepcion", e.target.value)}
-          />
+          <Input type="time" value={form.horaRecepcion} onChange={(e) => set("horaRecepcion", e.target.value)} />
         </div>
         <div>
           <Label>Hora de recepción DCC <span className="normal-case">(fecha y hora)</span></Label>
-          <Input
-            type="datetime-local"
-            value={form.fechaHoraRecepcionDcc}
-            onChange={(e) => set("fechaHoraRecepcionDcc", e.target.value)}
-          />
+          <Input type="datetime-local" value={form.fechaHoraRecepcionDcc} onChange={(e) => set("fechaHoraRecepcionDcc", e.target.value)} />
         </div>
         <div>
           <Label>Volante de Oficialía de Partes/Correo</Label>
-          <Input
-            value={form.volanteOficialia}
-            onChange={(e) => set("volanteOficialia", e.target.value)}
-          />
+          <Input value={form.volanteOficialia} onChange={(e) => set("volanteOficialia", e.target.value)} />
         </div>
         <div>
           <Label>Número de oficio ente</Label>
-          <Input
-            value={form.numeroOficioEnte}
-            onChange={(e) => set("numeroOficioEnte", e.target.value)}
-          />
+          <Input value={form.numeroOficioEnte} onChange={(e) => set("numeroOficioEnte", e.target.value)} />
         </div>
       </Section>
 
       <Section title="Firma / Origen">
-        <div>
-          <Label>Signado por</Label>
-          <CreatableCombobox
-            value={form.signadoPor}
-            onChange={(v) => set("signadoPor", v)}
-            suggestions={opt("signadoPor")}
-            onDeleteSuggestion={deleteSuggestion("signadoPor")}
-          />
-        </div>
-        <div>
-          <Label>Cargo / Puesto</Label>
-          <CreatableCombobox
-            value={form.cargoPuesto}
-            onChange={(v) => set("cargoPuesto", v)}
-            suggestions={opt("cargoPuesto")}
-            onDeleteSuggestion={deleteSuggestion("cargoPuesto")}
-          />
-        </div>
-        <div>
-          <Label>Asunto</Label>
-          <CreatableCombobox
-            value={form.asunto}
-            onChange={(v) => set("asunto", v)}
-            suggestions={opt("asunto")}
-            onDeleteSuggestion={deleteSuggestion("asunto")}
-          />
-        </div>
-        <div>
-          <Label>Ente</Label>
-          <CreatableCombobox
-            value={form.ente}
-            onChange={(v) => set("ente", v)}
-            suggestions={opt("ente")}
-            onDeleteSuggestion={deleteSuggestion("ente")}
-          />
-        </div>
+        <div><Label>Signado por</Label><CreatableCombobox value={form.signadoPor} onChange={(v) => set("signadoPor", v)} suggestions={opt("signadoPor")} onDeleteSuggestion={deleteSuggestion("signadoPor")} /></div>
+        <div><Label>Cargo / Puesto</Label><CreatableCombobox value={form.cargoPuesto} onChange={(v) => set("cargoPuesto", v)} suggestions={opt("cargoPuesto")} onDeleteSuggestion={deleteSuggestion("cargoPuesto")} /></div>
+        <div><Label>Asunto</Label><CreatableCombobox value={form.asunto} onChange={(v) => set("asunto", v)} suggestions={opt("asunto")} onDeleteSuggestion={deleteSuggestion("asunto")} /></div>
+        <div><Label>Ente</Label><CreatableCombobox value={form.ente} onChange={(v) => set("ente", v)} suggestions={opt("ente")} onDeleteSuggestion={deleteSuggestion("ente")} /></div>
       </Section>
 
       <Section title="Sesión">
-        <div>
-          <Label>Nombre de Órgano Colegiado</Label>
-          <CreatableCombobox
-            value={form.organoColegiado}
-            onChange={(v) => set("organoColegiado", v)}
-            suggestions={opt("organoColegiado")}
-            onDeleteSuggestion={deleteSuggestion("organoColegiado")}
-          />
-        </div>
-        <div>
-          <Label>Fecha y hora de la sesión</Label>
-          <Input
-            type="datetime-local"
-            value={form.fechaHoraSesion}
-            onChange={(e) => set("fechaHoraSesion", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label>Número de la sesión</Label>
-          <Input
-            value={form.numeroSesion}
-            onChange={(e) => set("numeroSesion", e.target.value)}
-            placeholder="Ej. 03"
-          />
-        </div>
-        <div>
-          <Label>Tipo de sesión</Label>
-          <CreatableCombobox
-            value={form.tipoSesion}
-            onChange={(v) => set("tipoSesion", v)}
-            suggestions={opt("tipoSesion")}
-            onDeleteSuggestion={deleteSuggestion("tipoSesion")}
-          />
-        </div>
-        <div>
-          <Label>Persona contralora ciudadana convocada</Label>
-          <CreatableCombobox
-            value={form.personaContralora}
-            onChange={(v) => set("personaContralora", v)}
-            suggestions={opt("personaContralora")}
-            onDeleteSuggestion={deleteSuggestion("personaContralora")}
-          />
-        </div>
-        <div>
-          <Label>Persona contralora ciudadana suplente</Label>
-          <CreatableCombobox
-            value={form.personaContraloraSuplente}
-            onChange={(v) => set("personaContraloraSuplente", v)}
-            suggestions={opt("personaContraloraSuplente")}
-            onDeleteSuggestion={deleteSuggestion("personaContraloraSuplente")}
-          />
-        </div>
-        <div>
-          <Label>Carpeta de trabajo</Label>
-          <YesNoSegmented
-            value={form.carpetaTrabajo}
-            onChange={(v) => set("carpetaTrabajo", v)}
-          />
-        </div>
+        <div><Label>Nombre de Órgano Colegiado</Label><CreatableCombobox value={form.organoColegiado} onChange={(v) => set("organoColegiado", v)} suggestions={opt("organoColegiado")} onDeleteSuggestion={deleteSuggestion("organoColegiado")} /></div>
+        <div><Label>Fecha y hora de la sesión</Label><Input type="datetime-local" value={form.fechaHoraSesion} onChange={(e) => set("fechaHoraSesion", e.target.value)} /></div>
+        <div><Label>Número de la sesión</Label><Input value={form.numeroSesion} onChange={(e) => set("numeroSesion", e.target.value)} placeholder="Ej. 03" /></div>
+        <div><Label>Tipo de sesión</Label><CreatableCombobox value={form.tipoSesion} onChange={(v) => set("tipoSesion", v)} suggestions={opt("tipoSesion")} onDeleteSuggestion={deleteSuggestion("tipoSesion")} /></div>
+        <div><Label>Persona contralora ciudadana convocada</Label><CreatableCombobox value={form.personaContralora} onChange={(v) => set("personaContralora", v)} suggestions={opt("personaContralora")} onDeleteSuggestion={deleteSuggestion("personaContralora")} /></div>
+        <div><Label>Persona contralora ciudadana suplente</Label><CreatableCombobox value={form.personaContraloraSuplente} onChange={(v) => set("personaContraloraSuplente", v)} suggestions={opt("personaContraloraSuplente")} onDeleteSuggestion={deleteSuggestion("personaContraloraSuplente")} /></div>
+        <div><Label>Carpeta de trabajo</Label><YesNoSegmented value={form.carpetaTrabajo} onChange={(v) => set("carpetaTrabajo", v)} /></div>
         <div>
           <Label>Datos sesión virtual / presencial</Label>
-          <YesNoSegmented
-            value={form.sesionVirtualPresencial}
-            onChange={(v) => set("sesionVirtualPresencial", v)}
-          />
+          <YesNoSegmented value={form.sesionVirtualPresencial} onChange={(v) => set("sesionVirtualPresencial", v)} />
           {form.sesionVirtualPresencial === "Sí" && (
             <div className="mt-3 animate-rise">
               <Label>Datos de la sesión:</Label>
-              <Textarea
-                placeholder="Escribe aquí los datos de la sesión…"
-                value={form.sesionVirtualDetalle}
-                onChange={(e) => set("sesionVirtualDetalle", e.target.value)}
-              />
+              <Textarea placeholder="Escribe aquí los datos de la sesión…" value={form.sesionVirtualDetalle} onChange={(e) => set("sesionVirtualDetalle", e.target.value)} />
             </div>
           )}
         </div>
       </Section>
 
       <Section title="Folio">
-        <div>
-          <Label>Consecutivo folio (SCG/DCC/CE/----/2026)</Label>
-          <Input
-            value={form.consecutivoFolio}
-            onChange={(e) => set("consecutivoFolio", e.target.value)}
-            placeholder="SCG/DCC/CE/----/2026"
-          />
-        </div>
-        <div>
-          <Label>Firma</Label>
-          <CreatableCombobox
-            value={form.firma}
-            onChange={(v) => set("firma", v)}
-            suggestions={opt("firma")}
-            onDeleteSuggestion={deleteSuggestion("firma")}
-            nonDeletableSuggestions={FIRMA_DEFAULTS}
-          />
-        </div>
+        <div><Label>Consecutivo folio (SCG/DCC/CE/----/2026)</Label><Input value={form.consecutivoFolio} onChange={(e) => set("consecutivoFolio", e.target.value)} placeholder="SCG/DCC/CE/----/2026" /></div>
+        <div><Label>Firma</Label><CreatableCombobox value={form.firma} onChange={(v) => set("firma", v)} suggestions={opt("firma")} onDeleteSuggestion={deleteSuggestion("firma")} nonDeletableSuggestions={FIRMA_DEFAULTS} /></div>
       </Section>
 
       {isExtemporaneo && (
         <Section title="C.C.E.P.">
           <div className="md:col-span-2">
             <Label>C.C.E.P.</Label>
-            <CreatableCombobox
-              value={form.ccep}
-              onChange={(v) => set("ccep", v)}
-              suggestions={opt("ccep")}
-              onDeleteSuggestion={deleteSuggestion("ccep")}
-              placeholder="Escribe o selecciona C.C.E.P.…"
-            />
+            <CreatableCombobox value={form.ccep} onChange={(v) => set("ccep", v)} suggestions={opt("ccep")} onDeleteSuggestion={deleteSuggestion("ccep")} placeholder="Escribe o selecciona C.C.E.P.…" />
+          </div>
+        </Section>
+      )}
+
+      {isConvocatoria && (
+        <Section title="Seguimiento">
+          <div className="md:col-span-2">
+            <Label>Entrega de reporte de Actividades</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {["entregado", "no entregado"].map((estado) => {
+                const active = form.reporteActividadesEstado === estado;
+                return (
+                  <button
+                    key={estado}
+                    type="button"
+                    onClick={() => set("reporteActividadesEstado", estado)}
+                    className={cn(
+                      "rounded-md border px-4 py-2 text-sm font-semibold transition-colors",
+                      active
+                        ? estado === "entregado"
+                          ? "border-green-700 bg-green-700 text-white"
+                          : "border-red-700 bg-red-700 text-white"
+                        : "border-input bg-white text-muted-foreground hover:bg-secondary",
+                    )}
+                  >
+                    {estado === "entregado" ? "Entregado" : "No entregado"}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Si permanece pendiente, el sistema seleccionará automáticamente “No entregado” al vencer 5 días hábiles desde la fecha y hora de la sesión, usando horario de Ciudad de México.
+            </p>
           </div>
         </Section>
       )}
