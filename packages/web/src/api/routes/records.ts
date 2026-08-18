@@ -10,6 +10,7 @@ const recordFields = z.object({
   fechaRecepcionOficialia: z.string().nullable().optional(),
   horaRecepcion: z.string().nullable().optional(),
   fechaHoraRecepcionDcc: z.string().nullable().optional(),
+  medioRecepcion: z.enum(["Correo", "Oficialía", "Ambos", ""]).nullable().optional(),
   volanteOficialia: z.string().nullable().optional(),
   numeroOficioEnte: z.string().nullable().optional(),
   signadoPor: z.string().nullable().optional(),
@@ -118,8 +119,6 @@ function pad2(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-// Suma días hábiles de lunes a viernes conservando la hora local capturada.
-// Usa UTC solo como calendario neutro para evitar desplazamientos de zona horaria.
 function addBusinessDaysMexicoCity(value: string | null | undefined, businessDays = 5): string | null {
   const parts = parseLocalSession(value);
   if (!parts) return null;
@@ -201,8 +200,6 @@ function enrichExpediente<T extends {
   };
 }
 
-// Mantiene los consecutivos globales sin huecos después de eliminar registros.
-// Conserva el orden existente por consecutivo; id desempata cualquier duplicado previo.
 async function resequenceConsecutivos() {
   const remaining = await db
     .select({
@@ -243,12 +240,7 @@ export const records = {
       const rows = await db
         .select()
         .from(schema.records)
-        .where(
-          and(
-            eq(schema.records.anio, input.anio),
-            eq(schema.records.mes, input.mes),
-          ),
-        )
+        .where(and(eq(schema.records.anio, input.anio), eq(schema.records.mes, input.mes)))
         .orderBy(desc(schema.records.consecutivo));
       return rows.map(enrichExpediente);
     }),
@@ -258,11 +250,7 @@ export const records = {
     const rows = await db
       .select()
       .from(schema.records)
-      .orderBy(
-        desc(schema.records.anio),
-        desc(schema.records.mes),
-        desc(schema.records.consecutivo),
-      );
+      .orderBy(desc(schema.records.anio), desc(schema.records.mes), desc(schema.records.consecutivo));
     return rows.map(enrichExpediente);
   }),
 
@@ -279,10 +267,7 @@ export const records = {
     .input(z.object({ id: z.number() }))
     .handler(async ({ input }) => {
       await syncAutomaticReportStatuses();
-      const [row] = await db
-        .select()
-        .from(schema.records)
-        .where(eq(schema.records.id, input.id));
+      const [row] = await db.select().from(schema.records).where(eq(schema.records.id, input.id));
       if (!row) throw new ORPCError("NOT_FOUND", { message: "Registro no encontrado" });
       return enrichExpediente(row);
     }),
@@ -339,12 +324,7 @@ export const records = {
       for (const item of prepared) {
         const [row] = await db
           .insert(schema.records)
-          .values({
-            ...item.fields,
-            mes: item.mes,
-            anio: item.anio,
-            consecutivo: nextConsecutivo,
-          })
+          .values({ ...item.fields, mes: item.mes, anio: item.anio, consecutivo: nextConsecutivo })
           .returning();
 
         if (row) inserted.push(row);
