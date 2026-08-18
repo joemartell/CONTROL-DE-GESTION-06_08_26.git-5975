@@ -15,6 +15,7 @@ export const records = sqliteTable("records", {
   fechaRecepcionOficialia: text("fecha_recepcion_oficialia"), // YYYY-MM-DD
   horaRecepcion: text("hora_recepcion"), // HH:mm
   fechaHoraRecepcionDcc: text("fecha_hora_recepcion_dcc"), // ISO datetime
+  medioRecepcion: text("medio_recepcion"), // "Correo" | "Oficialía" | "Ambos"
 
   volanteOficialia: text("volante_oficialia"),
   numeroOficioEnte: text("numero_oficio_ente"),
