@@ -74,6 +74,7 @@ export function RecordDetail({
         <Row label="Fecha recepción oficialía" value={fmtDate(record.fechaRecepcionOficialia)} />
         <Row label="Hora de recepción" value={record.horaRecepcion} />
         <Row label="Hora recepción DCC" value={fmtDateTime(record.fechaHoraRecepcionDcc)} />
+        <Row label="Medio por el cual se recibió" value={record.medioRecepcion} />
         <Row label="Volante Oficialía/Correo" value={record.volanteOficialia} />
         <Row label="Número de oficio ente" value={record.numeroOficioEnte} />
         <Row label="Signado por" value={record.signadoPor} />
