@@ -202,7 +202,8 @@ export function buildTemplateData(r: Record<string, unknown>) {
   const rec = r as {
     consecutivo: number; mes: number; anio: number;
     fechaRecepcionOficialia: string | null; horaRecepcion: string | null;
-    fechaHoraRecepcionDcc: string | null; volanteOficialia: string | null;
+    fechaHoraRecepcionDcc: string | null; medioRecepcion: string | null;
+    volanteOficialia: string | null;
     numeroOficioEnte: string | null; signadoPor: string | null; cargoPuesto: string | null;
     asunto: string | null; ente: string | null; organoColegiado: string | null;
     fechaHoraSesion: string | null; numeroSesion: string | null; tipoSesion: string | null;
@@ -218,6 +219,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     fecha_recepcion_oficialia: fmtDate(rec.fechaRecepcionOficialia),
     hora_recepcion: fmtHoraRecepcion(rec.horaRecepcion),
     fecha_hora_recepcion_dcc: fmtDateTime(rec.fechaHoraRecepcionDcc),
+    medio_recepcion: rec.medioRecepcion ?? "",
     volante_oficialia: rec.volanteOficialia ?? "",
     numero_oficio_ente: rec.numeroOficioEnte ?? "",
     ...caseVariants("signado_por", rec.signadoPor),
