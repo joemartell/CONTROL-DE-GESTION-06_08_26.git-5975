@@ -24,7 +24,7 @@ export const records = sqliteTable("records", {
   asunto: text("asunto"),
   ente: text("ente"),
   organoColegiado: text("organo_colegiado"),
-  fechaHoraSesion: text("fecha_hora_sesion"), // ISO datetime
+  fechaHoraSesion: text("fecha_hora_sesion"), // ISO datetime local de Ciudad de México
   numeroSesion: text("numero_sesion"),
   tipoSesion: text("tipo_sesion"),
 
@@ -37,6 +37,10 @@ export const records = sqliteTable("records", {
   personaContralora: text("persona_contralora"),
   personaContraloraSuplente: text("persona_contralora_suplente"),
   ccep: text("ccep"),
+
+  // Seguimiento exclusivo de expedientes cuyo asunto es CONVOCATORIA.
+  // Valores: "entregado" | "no entregado" | "".
+  reporteActividadesEstado: text("reporte_actividades_estado"),
 
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
