@@ -47,6 +47,7 @@ function toExcelRow(record: Record<string, unknown>) {
     "Fecha recepción Oficialía": formatDateOnly(record.fechaRecepcionOficialia),
     "Hora recepción": record.horaRecepcion ?? "",
     "Fecha y hora recepción DCC": formatDateTime(record.fechaHoraRecepcionDcc),
+    "Medio por el cual se recibió": record.medioRecepcion ?? "",
     "Volante Oficialía / Correo": record.volanteOficialia ?? "",
     "Número de oficio ente": record.numeroOficioEnte ?? "",
     "Signado por": record.signadoPor ?? "",
@@ -189,7 +190,7 @@ export default function Informe() {
             </div>
 
             <div className="mt-5 rounded-lg border border-accent/30 bg-accent/10 p-4 text-sm text-wine-900">
-              Incluye todos los meses y años, Oficialía, sesión, personas contraloras, folio, firma, C.C.E.P., estado del expediente y seguimiento del reporte de actividades.
+              Incluye todos los meses y años, Oficialía, medio de recepción, sesión, personas contraloras, folio, firma, C.C.E.P., estado del expediente y seguimiento del reporte de actividades.
             </div>
 
             <Button className="mt-5 w-full" size="lg" onClick={exportAll} disabled={allRecords.isLoading || completeRecords.length === 0 || downloading !== null}>
