@@ -6,6 +6,7 @@ import { Modal } from "../components/ui/modal";
 import { RecordForm } from "../components/record-form";
 import { RecordDetail } from "../components/record-detail";
 import { PrintDialog } from "../components/print-dialog";
+import { ExcelImportControls } from "../components/excel-import-controls";
 import { useRecordsByYear, useYears, useDeleteRecord } from "../queries/records";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +106,7 @@ export default function Index() {
               {MESES[month - 1]} <span className="text-accent">{year}</span>
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <div className="relative">
               <Calendar className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <select
@@ -118,6 +119,11 @@ export default function Index() {
                 ))}
               </select>
             </div>
+            <ExcelImportControls
+              year={year}
+              month={month}
+              monthName={MESES[month - 1] ?? "Mes"}
+            />
             <Button onClick={openNew} size="lg">
               <Plus className="size-4" /> Agregar
             </Button>
@@ -132,10 +138,17 @@ export default function Index() {
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-20 text-center">
             <Inbox className="mb-3 size-10 text-muted-foreground/50" />
             <p className="font-display text-lg font-semibold text-ink">Sin registros en {MESES[month - 1]}</p>
-            <p className="mb-4 text-sm text-muted-foreground">Agrega el primer registro de este mes.</p>
-            <Button onClick={openNew}>
-              <Plus className="size-4" /> Nuevo registro
-            </Button>
+            <p className="mb-4 text-sm text-muted-foreground">Agrega el primer registro o importa un archivo Excel de este mes.</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <ExcelImportControls
+                year={year}
+                month={month}
+                monthName={MESES[month - 1] ?? "Mes"}
+              />
+              <Button onClick={openNew}>
+                <Plus className="size-4" /> Nuevo registro
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
