@@ -60,12 +60,18 @@ export function ExcelImportControls({
 
     const headers = IMPORT_COLUMNS.map(([header]) => header);
     const example = IMPORT_COLUMNS.map(([, , value]) => value);
-    const dataSheet = XLSX.utils.aoa_to_sheet([headers, example]);
+
+    // La primera hoja es la que importa la app: queda vacía para evitar cargar el ejemplo.
+    const dataSheet = XLSX.utils.aoa_to_sheet([headers]);
     dataSheet["!cols"] = IMPORT_COLUMNS.map(([header, , exampleValue]) => ({
       wch: Math.min(42, Math.max(16, header.length + 2, exampleValue.length + 2)),
     }));
-    dataSheet["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length - 1)}2` };
+    dataSheet["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length - 1)}1` };
     XLSX.utils.book_append_sheet(workbook, dataSheet, "Registros");
+
+    const exampleSheet = XLSX.utils.aoa_to_sheet([headers, example]);
+    exampleSheet["!cols"] = dataSheet["!cols"];
+    XLSX.utils.book_append_sheet(workbook, exampleSheet, "Ejemplo");
 
     const guideRows = [
       ["Campo", "Campo interno", "Ejemplo", "Indicaciones"],
