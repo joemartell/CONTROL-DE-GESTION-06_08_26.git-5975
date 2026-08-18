@@ -28,6 +28,7 @@ const recordFields = z.object({
   personaContralora: z.string().nullable().optional(),
   personaContraloraSuplente: z.string().nullable().optional(),
   ccep: z.string().nullable().optional(),
+  reporteActividadesEstado: z.enum(["entregado", "no entregado", ""]).nullable().optional(),
 });
 
 type RecordFields = z.infer<typeof recordFields>;
@@ -45,18 +46,29 @@ function deriveMonthYearStrict(fecha: string | null | undefined) {
   return { mes: d.getMonth() + 1, anio: d.getFullYear() };
 }
 
-function isExtemporaneo(asunto: string | null | undefined): boolean {
-  return (asunto ?? "")
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .toLowerCase() === "extemporaneo";
+    .toLowerCase();
+}
+
+function isExtemporaneo(asunto: string | null | undefined): boolean {
+  return normalizeText(asunto) === "extemporaneo";
+}
+
+function isConvocatoria(asunto: string | null | undefined): boolean {
+  return normalizeText(asunto) === "convocatoria";
 }
 
 function sanitizeConditionalFields(fields: RecordFields): RecordFields {
   return {
     ...fields,
     ccep: isExtemporaneo(fields.asunto) ? fields.ccep : "",
+    reporteActividadesEstado: isConvocatoria(fields.asunto)
+      ? (fields.reporteActividadesEstado ?? "")
+      : "",
   };
 }
 
@@ -86,6 +98,109 @@ async function learnOptions(fields: RecordFields) {
   }
 }
 
+function parseLocalSession(value: string | null | undefined) {
+  if (!value) return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const [, rawYear = "", rawMonth = "", rawDay = "", rawHour = "", rawMinute = ""] = match;
+  const year = Number(rawYear);
+  const month = Number(rawMonth);
+  const day = Number(rawDay);
+  const hour = Number(rawHour);
+  const minute = Number(rawMinute);
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+  return { year, month, day, hour, minute };
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+// Suma días hábiles de lunes a viernes conservando la hora local capturada.
+// Usa UTC solo como calendario neutro para evitar desplazamientos de zona horaria.
+function addBusinessDaysMexicoCity(value: string | null | undefined, businessDays = 5): string | null {
+  const parts = parseLocalSession(value);
+  if (!parts) return null;
+
+  const cursor = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  let added = 0;
+  while (added < businessDays) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    const weekday = cursor.getUTCDay();
+    if (weekday >= 1 && weekday <= 5) added += 1;
+  }
+
+  return `${cursor.getUTCFullYear()}-${pad2(cursor.getUTCMonth() + 1)}-${pad2(cursor.getUTCDate())}T${pad2(parts.hour)}:${pad2(parts.minute)}`;
+}
+
+function nowMexicoCityLocal(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`;
+}
+
+function reportDeadlinePassed(fechaHoraSesion: string | null | undefined): boolean {
+  const deadline = addBusinessDaysMexicoCity(fechaHoraSesion);
+  return !!deadline && nowMexicoCityLocal() > deadline;
+}
+
+async function syncAutomaticReportStatuses() {
+  const rows = await db
+    .select({
+      id: schema.records.id,
+      asunto: schema.records.asunto,
+      fechaHoraSesion: schema.records.fechaHoraSesion,
+      reporteActividadesEstado: schema.records.reporteActividadesEstado,
+    })
+    .from(schema.records);
+
+  for (const row of rows) {
+    if (!isConvocatoria(row.asunto)) continue;
+    if (row.reporteActividadesEstado === "entregado" || row.reporteActividadesEstado === "no entregado") continue;
+    if (!reportDeadlinePassed(row.fechaHoraSesion)) continue;
+
+    await db
+      .update(schema.records)
+      .set({ reporteActividadesEstado: "no entregado", updatedAt: new Date() })
+      .where(eq(schema.records.id, row.id));
+  }
+}
+
+function enrichExpediente<T extends {
+  asunto: string | null;
+  fechaHoraSesion: string | null;
+  reporteActividadesEstado: string | null;
+}>(row: T) {
+  if (!isConvocatoria(row.asunto)) {
+    return {
+      ...row,
+      esExpediente: false,
+      expedienteEstado: null,
+      reporteFechaLimite: null,
+      reporteVencido: false,
+    };
+  }
+
+  const deadline = addBusinessDaysMexicoCity(row.fechaHoraSesion);
+  return {
+    ...row,
+    esExpediente: true,
+    expedienteEstado: row.reporteActividadesEstado === "entregado" ? "finalizado" : "pendiente",
+    reporteFechaLimite: deadline,
+    reporteVencido: !!deadline && nowMexicoCityLocal() > deadline && row.reporteActividadesEstado !== "entregado",
+  };
+}
+
 // Mantiene los consecutivos globales sin huecos después de eliminar registros.
 // Conserva el orden existente por consecutivo; id desempata cualquier duplicado previo.
 async function resequenceConsecutivos() {
@@ -111,19 +226,21 @@ async function resequenceConsecutivos() {
 export const records = {
   listByYear: base
     .input(z.object({ anio: z.number() }))
-    .handler(({ input }) =>
-      db
+    .handler(async ({ input }) => {
+      await syncAutomaticReportStatuses();
+      const rows = await db
         .select()
         .from(schema.records)
         .where(eq(schema.records.anio, input.anio))
-        .orderBy(desc(schema.records.consecutivo)),
-    ),
+        .orderBy(desc(schema.records.consecutivo));
+      return rows.map(enrichExpediente);
+    }),
 
-  // Registros de un mes y año para generar informes mensuales.
   listByMonth: base
     .input(z.object({ anio: z.number(), mes: z.number().min(1).max(12) }))
-    .handler(({ input }) =>
-      db
+    .handler(async ({ input }) => {
+      await syncAutomaticReportStatuses();
+      const rows = await db
         .select()
         .from(schema.records)
         .where(
@@ -132,20 +249,22 @@ export const records = {
             eq(schema.records.mes, input.mes),
           ),
         )
-        .orderBy(desc(schema.records.consecutivo)),
-    ),
+        .orderBy(desc(schema.records.consecutivo));
+      return rows.map(enrichExpediente);
+    }),
 
-  // Consolidado completo de todos los años y meses.
-  listAll: base.handler(() =>
-    db
+  listAll: base.handler(async () => {
+    await syncAutomaticReportStatuses();
+    const rows = await db
       .select()
       .from(schema.records)
       .orderBy(
         desc(schema.records.anio),
         desc(schema.records.mes),
         desc(schema.records.consecutivo),
-      ),
-  ),
+      );
+    return rows.map(enrichExpediente);
+  }),
 
   years: base.handler(async () => {
     const rows = await db
@@ -159,12 +278,13 @@ export const records = {
   get: base
     .input(z.object({ id: z.number() }))
     .handler(async ({ input }) => {
+      await syncAutomaticReportStatuses();
       const [row] = await db
         .select()
         .from(schema.records)
         .where(eq(schema.records.id, input.id));
       if (!row) throw new ORPCError("NOT_FOUND", { message: "Registro no encontrado" });
-      return row;
+      return enrichExpediente(row);
     }),
 
   create: base
@@ -180,11 +300,9 @@ export const records = {
         .values({ ...fields, mes, anio, consecutivo: (maxc ?? 0) + 1 })
         .returning();
       await learnOptions(fields);
-      return row;
+      return row ? enrichExpediente(row) : row;
     }),
 
-  // Importación masiva desde Excel. Todas las filas se validan antes de insertar
-  // para evitar cargas parciales cuando existe una fecha inválida o de otro mes.
   importExcel: base
     .input(z.object({
       anio: z.number(),
@@ -250,7 +368,7 @@ export const records = {
         .returning();
       if (!row) throw new ORPCError("NOT_FOUND", { message: "Registro no encontrado" });
       await learnOptions(fields);
-      return row;
+      return enrichExpediente(row);
     }),
 
   remove: base
