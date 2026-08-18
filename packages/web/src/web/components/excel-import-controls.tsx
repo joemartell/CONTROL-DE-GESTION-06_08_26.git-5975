@@ -7,6 +7,7 @@ const IMPORT_COLUMNS = [
   ["Fecha recepción oficialía", "fechaRecepcionOficialia", "2026-08-04", "Obligatorio. Formato YYYY-MM-DD."],
   ["Hora recepción", "horaRecepcion", "16:21", "Formato HH:mm."],
   ["Fecha y hora recepción DCC", "fechaHoraRecepcionDcc", "2026-08-04T16:30", "Formato YYYY-MM-DDTHH:mm."],
+  ["Medio por el cual se recibió", "medioRecepcion", "Correo", "Usa únicamente Correo, Oficialía o Ambos."],
   ["Volante Oficialía / Correo", "volanteOficialia", "VOL-123", "Texto libre."],
   ["Número de oficio ente", "numeroOficioEnte", "SGIRPC/DEAF/123/2026", "Texto libre."],
   ["Signado por", "signadoPor", "M.D. Erika Alejandra Barba Luna", "Texto libre o valor del catálogo."],
@@ -47,6 +48,18 @@ function normalizeReportStatus(value: string): string {
     .toLowerCase();
   if (normalized === "entregado") return "entregado";
   if (normalized === "no entregado" || normalized === "noentregado") return "no entregado";
+  return "";
+}
+
+function normalizeMedioRecepcion(value: string): string {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "correo") return "Correo";
+  if (normalized === "oficialia") return "Oficialía";
+  if (normalized === "ambos") return "Ambos";
   return "";
 }
 
@@ -119,7 +132,13 @@ export function ExcelImportControls({
         const field = HEADER_MAP.get(normalizeHeader(header));
         if (!field) continue;
         const text = value == null ? "" : String(value).trim();
-        mapped[field] = field === "reporteActividadesEstado" ? normalizeReportStatus(text) : text;
+        if (field === "reporteActividadesEstado") {
+          mapped[field] = normalizeReportStatus(text);
+        } else if (field === "medioRecepcion") {
+          mapped[field] = normalizeMedioRecepcion(text);
+        } else {
+          mapped[field] = text;
+        }
       }
       return mapped;
     });
