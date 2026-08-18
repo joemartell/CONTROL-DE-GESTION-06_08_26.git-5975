@@ -35,6 +35,13 @@ export function useCreateRecord() {
   );
 }
 
+export function useImportExcelRecords() {
+  const qc = useQueryClient();
+  return useMutation(
+    orpc.records.importExcel.mutationOptions({ onSuccess: () => invalidateAll(qc) }),
+  );
+}
+
 export function useUpdateRecord() {
   const qc = useQueryClient();
   return useMutation(
