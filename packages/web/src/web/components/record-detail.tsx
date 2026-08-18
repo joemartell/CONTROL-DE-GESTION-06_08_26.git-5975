@@ -16,12 +16,28 @@ function fmtDateTime(v: string | null) {
   return isNaN(d.getTime()) ? v : d.toLocaleString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function isExtemporaneo(value: string | null | undefined) {
+function normalizeText(value: string | null | undefined) {
   return (value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .toLowerCase() === "extemporaneo";
+    .toLowerCase();
+}
+
+function isExtemporaneo(value: string | null | undefined) {
+  return normalizeText(value) === "extemporaneo";
+}
+
+function isConvocatoria(value: string | null | undefined) {
+  return normalizeText(value) === "convocatoria";
+}
+
+function fmtLocalDeadline(value: string | null | undefined) {
+  if (!value) return "—";
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!match) return value;
+  const [, year = "", month = "", day = "", hour = "", minute = ""] = match;
+  return `${day}/${month}/${year} ${hour}:${minute} h`;
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -78,6 +94,19 @@ export function RecordDetail({
         <Row label="Consecutivo folio" value={record.consecutivoFolio} />
         <Row label="Firma" value={record.firma} />
         {isExtemporaneo(record.asunto) && <Row label="C.C.E.P." value={record.ccep} />}
+        {isConvocatoria(record.asunto) && (
+          <>
+            <div className="mt-5 border-b border-primary/30 pb-1 text-xs font-semibold uppercase tracking-wider text-primary">
+              Seguimiento
+            </div>
+            <Row
+              label="Entrega de reporte de Actividades"
+              value={record.reporteActividadesEstado === "entregado" ? "Entregado" : record.reporteActividadesEstado === "no entregado" ? "No entregado" : "Pendiente"}
+            />
+            <Row label="Fecha límite del reporte" value={fmtLocalDeadline(record.reporteFechaLimite)} />
+            <Row label="Estatus del expediente" value={record.expedienteEstado === "finalizado" ? "Finalizado" : "Pendiente"} />
+          </>
+        )}
       </dl>
     </Modal>
   );
