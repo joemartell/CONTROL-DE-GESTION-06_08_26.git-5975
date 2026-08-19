@@ -35,6 +35,7 @@ export const records = sqliteTable("records", {
 
   consecutivoFolio: text("consecutivo_folio"),
   firma: text("firma"), // LMD | MDCT | MAPG | SYOM | ACP (creable)
+  elaboradoPor: text("elaborado_por"), // José Alberto Sahagún Pérez | José de Jesús Martell Monroy
   personaContralora: text("persona_contralora"),
   personaContraloraSuplente: text("persona_contralora_suplente"),
   ccep: text("ccep"),
