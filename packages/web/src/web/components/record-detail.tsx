@@ -94,6 +94,7 @@ export function RecordDetail({
         )}
         <Row label="Consecutivo folio" value={record.consecutivoFolio} />
         <Row label="Firma" value={record.firma} />
+        <Row label="Elaborado por" value={record.elaboradoPor} />
         {isExtemporaneo(record.asunto) && <Row label="C.C.E.P." value={record.ccep} />}
         {isConvocatoria(record.asunto) && (
           <>
