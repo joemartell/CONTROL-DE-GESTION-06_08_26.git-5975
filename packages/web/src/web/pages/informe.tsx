@@ -65,6 +65,7 @@ function toExcelRow(record: Record<string, unknown>) {
     "Datos de la sesión": record.sesionVirtualDetalle ?? "",
     "Consecutivo folio": record.consecutivoFolio ?? "",
     "Firma": record.firma ?? "",
+    "Elaborado por": record.elaboradoPor ?? "",
     "C.C.E.P.": record.ccep ?? "",
     "Expediente": record.esExpediente ? "Sí" : "No",
     "Estatus del expediente": record.expedienteEstado === "finalizado" ? "Finalizado" : record.expedienteEstado === "pendiente" ? "Pendiente" : "",
@@ -190,7 +191,7 @@ export default function Informe() {
             </div>
 
             <div className="mt-5 rounded-lg border border-accent/30 bg-accent/10 p-4 text-sm text-wine-900">
-              Incluye todos los meses y años, Oficialía, medio de recepción, sesión, personas contraloras, folio, firma, C.C.E.P., estado del expediente y seguimiento del reporte de actividades.
+              Incluye todos los meses y años, Oficialía, medio de recepción, sesión, personas contraloras, folio, firma, elaborado por, C.C.E.P., estado del expediente y seguimiento del reporte de actividades.
             </div>
 
             <Button className="mt-5 w-full" size="lg" onClick={exportAll} disabled={allRecords.isLoading || completeRecords.length === 0 || downloading !== null}>
