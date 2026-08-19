@@ -25,6 +25,7 @@ const IMPORT_COLUMNS = [
   ["Datos de la sesión", "sesionVirtualDetalle", "Sala de juntas / enlace de videoconferencia", "Texto libre."],
   ["Consecutivo folio", "consecutivoFolio", "SCG/DCC/CE/0123/2026", "Texto libre."],
   ["Firma", "firma", "LMD", "Ej. LMD, MDCT, MAPG, SYOM o ACP."],
+  ["Elaborado por", "elaboradoPor", "José Alberto Sahagún Pérez", "Usa únicamente José Alberto Sahagún Pérez o José de Jesús Martell Monroy."],
   ["C.C.E.P.", "ccep", "Titular del Órgano Interno de Control", "Solo se conserva cuando Asunto = EXTEMPORÁNEO."],
   ["Entrega de reporte de Actividades", "reporteActividadesEstado", "entregado", "Solo aplica a CONVOCATORIA. Usa entregado, no entregado o deja vacío. Si queda vacío, el sistema marca no entregado automáticamente al vencer 5 días hábiles desde la sesión."],
 ] as const;
@@ -60,6 +61,17 @@ function normalizeMedioRecepcion(value: string): string {
   if (normalized === "correo") return "Correo";
   if (normalized === "oficialia") return "Oficialía";
   if (normalized === "ambos") return "Ambos";
+  return "";
+}
+
+function normalizeElaboradoPor(value: string): string {
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "jose alberto sahagun perez") return "José Alberto Sahagún Pérez";
+  if (normalized === "jose de jesus martell monroy") return "José de Jesús Martell Monroy";
   return "";
 }
 
@@ -136,6 +148,8 @@ export function ExcelImportControls({
           mapped[field] = normalizeReportStatus(text);
         } else if (field === "medioRecepcion") {
           mapped[field] = normalizeMedioRecepcion(text);
+        } else if (field === "elaboradoPor") {
+          mapped[field] = normalizeElaboradoPor(text);
         } else {
           mapped[field] = text;
         }
