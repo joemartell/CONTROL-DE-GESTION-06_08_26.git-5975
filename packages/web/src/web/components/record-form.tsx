@@ -32,6 +32,7 @@ type FormState = {
   sesionVirtualDetalle: string;
   consecutivoFolio: string;
   firma: string;
+  elaboradoPor: string;
   personaContralora: string;
   personaContraloraSuplente: string;
   ccep: string;
@@ -39,6 +40,10 @@ type FormState = {
 };
 
 const FIRMA_DEFAULTS = ["LMD", "MDCT", "MAPG", "SYOM", "ACP"];
+const ELABORADO_POR_OPTIONS = [
+  "José Alberto Sahagún Pérez",
+  "José de Jesús Martell Monroy",
+] as const;
 
 const empty: FormState = {
   fechaRecepcionOficialia: "",
@@ -60,6 +65,7 @@ const empty: FormState = {
   sesionVirtualDetalle: "",
   consecutivoFolio: "",
   firma: "",
+  elaboradoPor: "",
   personaContralora: "",
   personaContraloraSuplente: "",
   ccep: "",
@@ -97,6 +103,7 @@ function fromRecord(r: Record<string, unknown> | null): FormState {
     sesionVirtualDetalle: g("sesionVirtualDetalle"),
     consecutivoFolio: g("consecutivoFolio"),
     firma: g("firma"),
+    elaboradoPor: g("elaboradoPor"),
     personaContralora: g("personaContralora"),
     personaContraloraSuplente: g("personaContraloraSuplente"),
     ccep: g("ccep"),
@@ -262,6 +269,29 @@ export function RecordForm({
       <Section title="Folio">
         <div><Label>Consecutivo folio (SCG/DCC/CE/----/2026)</Label><Input value={form.consecutivoFolio} onChange={(e) => set("consecutivoFolio", e.target.value)} placeholder="SCG/DCC/CE/----/2026" /></div>
         <div><Label>Firma</Label><CreatableCombobox value={form.firma} onChange={(v) => set("firma", v)} suggestions={opt("firma")} onDeleteSuggestion={deleteSuggestion("firma")} nonDeletableSuggestions={FIRMA_DEFAULTS} /></div>
+        <div className="md:col-span-2">
+          <Label>Elaborado por</Label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {ELABORADO_POR_OPTIONS.map((persona) => {
+              const active = form.elaboradoPor === persona;
+              return (
+                <button
+                  key={persona}
+                  type="button"
+                  onClick={() => set("elaboradoPor", persona)}
+                  className={cn(
+                    "rounded-md border px-4 py-2 text-sm font-semibold transition-colors",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-white text-muted-foreground hover:bg-secondary",
+                  )}
+                >
+                  {persona}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </Section>
 
       {isExtemporaneo && (
