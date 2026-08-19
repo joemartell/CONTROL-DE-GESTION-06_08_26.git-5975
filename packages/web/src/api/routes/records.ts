@@ -26,6 +26,7 @@ const recordFields = z.object({
   sesionVirtualDetalle: z.string().nullable().optional(),
   consecutivoFolio: z.string().nullable().optional(),
   firma: z.string().nullable().optional(),
+  elaboradoPor: z.enum(["José Alberto Sahagún Pérez", "José de Jesús Martell Monroy", ""]).nullable().optional(),
   personaContralora: z.string().nullable().optional(),
   personaContraloraSuplente: z.string().nullable().optional(),
   ccep: z.string().nullable().optional(),
