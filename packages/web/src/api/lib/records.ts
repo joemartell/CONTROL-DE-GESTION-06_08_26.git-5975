@@ -209,7 +209,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     fechaHoraSesion: string | null; numeroSesion: string | null; tipoSesion: string | null;
     carpetaTrabajo: string | null; sesionVirtualPresencial: string | null;
     sesionVirtualDetalle: string | null; consecutivoFolio: string | null;
-    firma: string | null; personaContralora: string | null;
+    firma: string | null; elaboradoPor: string | null; personaContralora: string | null;
     personaContraloraSuplente: string | null; ccep: string | null;
   };
   return {
@@ -236,6 +236,7 @@ export function buildTemplateData(r: Record<string, unknown>) {
     ...caseVariants("sesion_virtual_detalle", rec.sesionVirtualDetalle),
     consecutivo_folio: rec.consecutivoFolio ?? "",
     firma: rec.firma ?? "",
+    ...caseVariants("elaborado_por", rec.elaboradoPor),
     ...caseVariants("persona_contralora", rec.personaContralora),
     ...caseVariants("persona_contralora_suplente", rec.personaContraloraSuplente),
     ...caseVariants("ccep", rec.ccep),
