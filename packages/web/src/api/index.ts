@@ -89,9 +89,11 @@ function safeFilename(record: typeof schema.records.$inferSelect) {
   return `registro-${record.consecutivo}-${safeAsunto}.docx`;
 }
 
-function toResponseBody(buffer: Buffer): Uint8Array {
-  const body = new Uint8Array(buffer.byteLength);
-  body.set(buffer);
+// Devuelve un ArrayBuffer real (no ArrayBufferLike) para que Response lo acepte
+// con las definiciones DOM usadas por web, mobile y desktop.
+function toResponseBody(buffer: Buffer): ArrayBuffer {
+  const body = new ArrayBuffer(buffer.byteLength);
+  new Uint8Array(body).set(buffer);
   return body;
 }
 
