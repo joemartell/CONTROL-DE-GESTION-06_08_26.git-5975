@@ -1,8 +1,17 @@
 import * as React from "react";
 import { Link } from "wouter";
-import { FileText, Download, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Download,
+  Eye,
+  FileText,
+  Loader2,
+} from "lucide-react";
 import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
+import { DocxPreviewEditor } from "./docx-preview-editor";
 import { useResolvePrint } from "../queries/templates";
 
 function download(recordId: number, templateId: number) {
@@ -27,9 +36,13 @@ export function PrintDialog({
   const id = record?.id ?? 0;
   const resolve = useResolvePrint(id, open && !!id);
   const [choice, setChoice] = React.useState<number | null>(null);
+  const [previewTemplateId, setPreviewTemplateId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    if (open) setChoice(null);
+    if (open) {
+      setChoice(null);
+      setPreviewTemplateId(null);
+    }
   }, [open, id]);
 
   const data = resolve.data;
@@ -41,11 +54,30 @@ export function PrintDialog({
     <Modal
       open={open}
       onClose={onClose}
-      size="md"
-      title={`Imprimir registro #${record?.consecutivo ?? ""}`}
-      subtitle="Se genera un .docx con los datos de este registro."
+      size={previewTemplateId ? "xl" : "md"}
+      title={
+        previewTemplateId
+          ? `Vista previa y edición · registro #${record?.consecutivo ?? ""}`
+          : `Imprimir registro #${record?.consecutivo ?? ""}`
+      }
+      subtitle={
+        previewTemplateId
+          ? "Los cambios se aplican a una copia generada; la plantilla original conserva intactos sus estilos."
+          : "Genera el .docx directamente o revisa y edita su contenido antes de descargar."
+      }
     >
-      {resolve.isLoading ? (
+      {previewTemplateId ? (
+        <div>
+          <Button
+            variant="outline"
+            className="mb-4"
+            onClick={() => setPreviewTemplateId(null)}
+          >
+            <ArrowLeft className="size-4" /> Volver a plantillas
+          </Button>
+          <DocxPreviewEditor recordId={id} templateId={previewTemplateId} />
+        </div>
+      ) : resolve.isLoading ? (
         <div className="flex items-center gap-2 py-8 text-muted-foreground">
           <Loader2 className="size-5 animate-spin" /> Determinando plantilla…
         </div>
@@ -84,9 +116,23 @@ export function PrintDialog({
               </p>
             </div>
           </div>
-          <Button onClick={() => download(id, data.template!.id)} className="w-full">
-            <Download className="size-4" /> Descargar .docx
-          </Button>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              variant="outline"
+              onClick={() => setPreviewTemplateId(data.template!.id)}
+              className="w-full"
+            >
+              <Eye className="size-4" /> Vista previa y editar
+            </Button>
+            <Button onClick={() => download(id, data.template!.id)} className="w-full">
+              <Download className="size-4" /> Descargar .docx
+            </Button>
+          </div>
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            La opción de vista previa permite cambiar los valores impresos y regenerar el Word desde la plantilla, conservando fuente, tamaño, negritas, alineación y demás estilos definidos en ella.
+          </p>
         </div>
       ) : (
         <div>
@@ -120,13 +166,24 @@ export function PrintDialog({
               </button>
             ))}
           </div>
-          <Button
-            onClick={() => choice && download(id, choice)}
-            disabled={!choice}
-            className="mt-4 w-full"
-          >
-            <Download className="size-4" /> Descargar .docx
-          </Button>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Button
+              variant="outline"
+              onClick={() => choice && setPreviewTemplateId(choice)}
+              disabled={!choice}
+              className="w-full"
+            >
+              <Eye className="size-4" /> Vista previa y editar
+            </Button>
+            <Button
+              onClick={() => choice && download(id, choice)}
+              disabled={!choice}
+              className="w-full"
+            >
+              <Download className="size-4" /> Descargar .docx
+            </Button>
+          </div>
         </div>
       )}
     </Modal>
