@@ -17,7 +17,7 @@ export function Modal({
   subtitle?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }) {
   React.useEffect(() => {
     if (!open) return;
@@ -27,7 +27,14 @@ export function Modal({
   }, [open, onClose]);
 
   if (!open) return null;
-  const width = size === "lg" ? "max-w-3xl" : size === "sm" ? "max-w-md" : "max-w-2xl";
+  const width =
+    size === "xl"
+      ? "max-w-7xl"
+      : size === "lg"
+        ? "max-w-3xl"
+        : size === "sm"
+          ? "max-w-md"
+          : "max-w-2xl";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm">

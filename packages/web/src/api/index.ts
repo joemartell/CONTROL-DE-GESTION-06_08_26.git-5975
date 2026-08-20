@@ -11,8 +11,8 @@ import { db } from "./database";
 import * as schema from "./database/schema";
 import { eq } from "drizzle-orm";
 import { TEMPLATES_DIR } from "./lib/storage";
-import { renderDocx } from "./lib/docx";
-import { RULE_KEYS, normalizaFirma } from "./lib/records";
+import { renderDocx, type TemplateOverrides } from "./lib/docx";
+import { RULE_KEYS, normalizaFirma, buildTemplateData } from "./lib/records";
 
 export const router = {
   ping,
@@ -80,48 +80,137 @@ app.post("/api/templates/upload", async (c) => {
   return c.json(row, 200);
 });
 
-// Imprimir: genera y descarga el .docx del registro con la plantilla indicada.
-app.get("/api/records/:id/print", async (c) => {
-  const id = Number(c.req.param("id"));
-  const templateId = Number(c.req.query("templateId"));
-  if (!id || !templateId) {
-    return c.json({ error: "Parámetros inválidos" }, 400);
-  }
-  const [rec] = await db.select().from(schema.records).where(eq(schema.records.id, id));
-  if (!rec) return c.json({ error: "Registro no encontrado" }, 404);
-  const [tpl] = await db
-    .select()
-    .from(schema.templates)
-    .where(eq(schema.templates.id, templateId));
-  if (!tpl) return c.json({ error: "Plantilla no encontrada" }, 404);
-  if (!existsSync(resolve(TEMPLATES_DIR, tpl.storedFilename))) {
-    return c.json({ error: "El archivo de la plantilla no existe" }, 404);
-  }
-
-try {
-  const buffer = renderDocx(tpl.storedFilename, rec);
-
-  const safeAsunto = (rec.asunto ?? "registro")
+function safeFilename(record: typeof schema.records.$inferSelect) {
+  const safeAsunto = (record.asunto ?? "registro")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .slice(0, 40);
+  return `registro-${record.consecutivo}-${safeAsunto}.docx`;
+}
 
-  const filename = `registro-${rec.consecutivo}-${safeAsunto}.docx`;
-
+function toResponseBody(buffer: Buffer): Uint8Array {
   const body = new Uint8Array(buffer.byteLength);
   body.set(buffer);
+  return body;
+}
 
-  return new Response(body, {
-    status: 200,
-    headers: {
-      "Content-Type": DOCX_MIME,
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
+function sanitizeOverrides(value: unknown): TemplateOverrides {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([key]) => /^[a-zA-Z0-9_]+$/.test(key))
+    .slice(0, 250)
+    .map(([key, item]) => [key, String(item ?? "").slice(0, 20000)] as const);
+  return Object.fromEntries(entries);
+}
+
+async function loadPrintContext(id: number, templateId: number) {
+  if (!id || !templateId) return { error: "Parámetros inválidos", status: 400 as const };
+
+  const [rec] = await db.select().from(schema.records).where(eq(schema.records.id, id));
+  if (!rec) return { error: "Registro no encontrado", status: 404 as const };
+
+  const [tpl] = await db
+    .select()
+    .from(schema.templates)
+    .where(eq(schema.templates.id, templateId));
+  if (!tpl) return { error: "Plantilla no encontrada", status: 404 as const };
+
+  if (!existsSync(resolve(TEMPLATES_DIR, tpl.storedFilename))) {
+    return { error: "El archivo de la plantilla no existe", status: 404 as const };
+  }
+
+  return { rec, tpl, filename: safeFilename(rec) };
+}
+
+// Datos editables que alimentan las etiquetas de la plantilla.
+app.get("/api/records/:id/print-data", async (c) => {
+  const id = Number(c.req.param("id"));
+  const templateId = Number(c.req.query("templateId"));
+  const context = await loadPrintContext(id, templateId);
+  if ("error" in context) return c.json({ error: context.error }, context.status);
+
+  return c.json({
+    filename: context.filename,
+    templateName: context.tpl.name,
+    data: buildTemplateData(context.rec),
   });
-} catch (err) {
+});
+
+// Vista previa: genera el mismo DOCX que se descargará, pero como respuesta inline.
+app.post("/api/records/:id/print-preview", async (c) => {
+  const id = Number(c.req.param("id"));
+  const templateId = Number(c.req.query("templateId"));
+  const context = await loadPrintContext(id, templateId);
+  if ("error" in context) return c.json({ error: context.error }, context.status);
+
+  const payload = await c.req.json().catch(() => ({}));
+  const overrides = sanitizeOverrides((payload as { overrides?: unknown }).overrides);
+
+  try {
+    const buffer = renderDocx(context.tpl.storedFilename, context.rec, overrides);
+    return new Response(toResponseBody(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type": DOCX_MIME,
+        "Content-Disposition": `inline; filename="${context.filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err) {
+    return c.json(
+      { error: "No se pudo generar la vista previa. Revisa las etiquetas de la plantilla.", detail: String(err) },
+      500,
+    );
+  }
+});
+
+// Imprimir clásico: descarga directa sin modificaciones.
+app.get("/api/records/:id/print", async (c) => {
+  const id = Number(c.req.param("id"));
+  const templateId = Number(c.req.query("templateId"));
+  const context = await loadPrintContext(id, templateId);
+  if ("error" in context) return c.json({ error: context.error }, context.status);
+
+  try {
+    const buffer = renderDocx(context.tpl.storedFilename, context.rec);
+    return new Response(toResponseBody(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type": DOCX_MIME,
+        "Content-Disposition": `attachment; filename="${context.filename}"`,
+      },
+    });
+  } catch (err) {
     return c.json(
       { error: "No se pudo generar el documento. Revisa las etiquetas de la plantilla.", detail: String(err) },
+      500,
+    );
+  }
+});
+
+// Descarga editada: regenera desde la plantilla original aplicando los cambios de texto.
+app.post("/api/records/:id/print", async (c) => {
+  const id = Number(c.req.param("id"));
+  const templateId = Number(c.req.query("templateId"));
+  const context = await loadPrintContext(id, templateId);
+  if ("error" in context) return c.json({ error: context.error }, context.status);
+
+  const payload = await c.req.json().catch(() => ({}));
+  const overrides = sanitizeOverrides((payload as { overrides?: unknown }).overrides);
+
+  try {
+    const buffer = renderDocx(context.tpl.storedFilename, context.rec, overrides);
+    return new Response(toResponseBody(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type": DOCX_MIME,
+        "Content-Disposition": `attachment; filename="${context.filename}"`,
+      },
+    });
+  } catch (err) {
+    return c.json(
+      { error: "No se pudo generar el documento editado. Revisa las etiquetas de la plantilla.", detail: String(err) },
       500,
     );
   }
